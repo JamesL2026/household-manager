@@ -3433,7 +3433,7 @@ input[readonly] {
     background: white;
     border-radius: 20px;
     padding: 40px;
-    max-width: 500px;
+    max-width: 800px;
     width: 90%;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
     text-align: center;
@@ -3453,8 +3453,10 @@ input[readonly] {
 
 .auth-options {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 20px;
+    justify-content: center;
+    align-items: stretch;
 }
 
 .auth-option-card {
@@ -3464,6 +3466,8 @@ input[readonly] {
     padding: 25px;
     transition: all 0.3s ease;
     cursor: pointer;
+    flex: 1;
+    min-width: 300px;
 }
 
 .auth-option-card:hover {
@@ -3573,6 +3577,22 @@ input[readonly] {
 
 .auth-footer small {
     font-size: 12px;
+}
+
+/* Responsive design for auth screen */
+@media (max-width: 768px) {
+    .auth-options {
+        flex-direction: column;
+    }
+    
+    .auth-container {
+        max-width: 500px;
+        padding: 30px 20px;
+    }
+    
+    .auth-option-card {
+        min-width: auto;
+    }
 }
 
 /* Login Modal Styles */
