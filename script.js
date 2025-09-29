@@ -1539,13 +1539,6 @@ class HouseholdManager {
         return element;
     }
 
-    generateRandomColor() {
-        const colors = [
-            '#FFB6C1', '#DDA0DD', '#98FB98', '#FFD700', '#87CEEB',
-            '#000080', '#F5F5DC', '#FF7F50', '#FFA07A', '#008080'
-        ];
-        return colors[Math.floor(Math.random() * colors.length)];
-    }
 
     showChoreDetails(choreId) {
         const chore = this.chores.find(c => c.id === choreId);
