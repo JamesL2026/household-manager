@@ -4754,21 +4754,36 @@ class HouseholdManager {
         // Show auth screen by default
         this.showAuthScreen();
         
-        // Set up event listeners for auth options
-        document.addEventListener('DOMContentLoaded', () => {
+        // Set up event listeners for auth options - use setTimeout to ensure DOM is ready
+        setTimeout(() => {
             const googleBtn = document.getElementById('google-auth-btn');
             const guestBtn = document.getElementById('guest-auth-btn');
             
+            console.log('Setting up auth button listeners:', { googleBtn, guestBtn });
+            
             if (googleBtn) {
                 googleBtn.addEventListener('click', () => {
+                    console.log('Google auth button clicked');
                     this.handleGoogleAuth();
                 });
             }
             
             if (guestBtn) {
                 guestBtn.addEventListener('click', () => {
+                    console.log('Guest auth button clicked');
                     this.handleGuestAuth();
                 });
+            }
+        }, 100);
+        
+        // Also set up event delegation as fallback
+        document.addEventListener('click', (e) => {
+            if (e.target && e.target.id === 'google-auth-btn') {
+                console.log('Google auth button clicked (delegation)');
+                this.handleGoogleAuth();
+            } else if (e.target && e.target.id === 'guest-auth-btn') {
+                console.log('Guest auth button clicked (delegation)');
+                this.handleGuestAuth();
             }
         });
     }
