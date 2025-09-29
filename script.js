@@ -4002,14 +4002,30 @@ class HouseholdManager {
         container.innerHTML = '';
 
         // Create a combined list with current user first, then other roommates
-        const currentUser = {
-            id: this.settings.currentUserId,
-            name: this.userProfile.name,
-            email: this.userProfile.email,
-            color: this.userProfile.color || '#1a73e8',
-            avatar: this.userProfile.avatar,
-            isCurrentUser: true
-        };
+        let currentUser;
+        if (this.isGuest) {
+            // Guest user - show as "Guest"
+            currentUser = {
+                id: this.settings.currentUserId,
+                name: 'Guest User',
+                email: 'guest@example.com',
+                color: this.userProfile.color || '#1a73e8',
+                avatar: null,
+                isCurrentUser: true,
+                isGuest: true
+            };
+        } else {
+            // Authenticated user - show profile information
+            currentUser = {
+                id: this.settings.currentUserId,
+                name: this.userProfile.name,
+                email: this.userProfile.email,
+                color: this.userProfile.color || '#1a73e8',
+                avatar: this.userProfile.avatar,
+                isCurrentUser: true,
+                isGuest: false
+            };
+        }
 
         const allRoommates = [currentUser, ...this.roommates.filter(r => r.id !== this.settings.currentUserId)];
 
@@ -4030,12 +4046,12 @@ class HouseholdManager {
                     <div class="roommate-avatar" onclick="app.openRoommateProfile('${roommate.id}')">
                         ${roommate.avatar && roommate.avatar.startsWith('data:') ? 
                             `<img src="${roommate.avatar}" alt="${roommate.name}">` : 
-                            `<div class="avatar-placeholder" style="background-color: ${roommate.color}; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold;">${(roommate.id === this.settings.currentUserId ? this.userProfile.name : roommate.name).charAt(0).toUpperCase()}</div>`
+                            `<div class="avatar-placeholder" style="background-color: ${roommate.color}; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold;">${roommate.name.charAt(0).toUpperCase()}</div>`
                         }
                     </div>
                     <div class="roommate-info">
                         <h3 style="color: #202124; margin: 0 0 4px 0; font-weight: 600;">
-                            ${roommate.id === this.settings.currentUserId ? this.userProfile.name : roommate.name}
+                            ${roommate.name}
                             ${roommate.id === this.settings.currentUserId ? ' <span style="background: #1a73e8; color: white; padding: 2px 6px; border-radius: 12px; font-size: 10px; font-weight: 500;">YOU</span>' : ''}
                         </h3>
                     </div>
