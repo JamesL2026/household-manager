@@ -132,6 +132,9 @@ class HouseholdManager {
         
         // Set up mandatory authentication
         this.setupMandatoryAuth();
+        
+        // Initialize maintenance contact settings
+        this.updateMaintenanceButton();
         this.roommates = this.loadData('roommates') || [];
         this.chores = this.loadData('chores') || [];
         this.personalTasks = this.loadData('personalTasks') || [];
@@ -5228,6 +5231,99 @@ class HouseholdManager {
         } catch (error) {
             console.error('Error signing out:', error);
             this.showNotification('Sign out failed: ' + error.message, 'error');
+        }
+    }
+
+    // Maintenance Contact Settings Functions
+    openMaintenanceContactModal() {
+        const modal = document.getElementById('maintenance-contact-modal');
+        if (modal) {
+            // Load current settings
+            const settings = this.loadData('maintenanceContact') || {
+                type: 'url',
+                url: 'https://docs.google.com/forms/d/e/1FAIpQLScaYoRhEz52za3Zv6OPTDoDo-2_H_rzFSrdzpYDGCrFj-tC6A/viewform',
+                phone: '',
+                label: 'Report to Maintenance'
+            };
+            
+            document.getElementById('maintenance-contact-type').value = settings.type;
+            document.getElementById('maintenance-url').value = settings.url;
+            document.getElementById('maintenance-phone').value = settings.phone;
+            document.getElementById('maintenance-label').value = settings.label;
+            
+            this.updateMaintenanceContactType();
+            modal.style.display = 'flex';
+        }
+    }
+
+    hideMaintenanceContactModal() {
+        const modal = document.getElementById('maintenance-contact-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    updateMaintenanceContactType() {
+        const type = document.getElementById('maintenance-contact-type').value;
+        const urlGroup = document.getElementById('url-group');
+        const phoneGroup = document.getElementById('phone-group');
+        
+        if (type === 'url') {
+            urlGroup.style.display = 'block';
+            phoneGroup.style.display = 'none';
+        } else {
+            urlGroup.style.display = 'none';
+            phoneGroup.style.display = 'block';
+        }
+    }
+
+    saveMaintenanceContact() {
+        const type = document.getElementById('maintenance-contact-type').value;
+        const url = document.getElementById('maintenance-url').value;
+        const phone = document.getElementById('maintenance-phone').value;
+        const label = document.getElementById('maintenance-label').value;
+        
+        const settings = {
+            type: type,
+            url: url,
+            phone: phone,
+            label: label
+        };
+        
+        this.saveData('maintenanceContact', settings);
+        this.updateMaintenanceButton();
+        this.hideMaintenanceContactModal();
+        this.showNotification('Maintenance contact settings saved!', 'success');
+    }
+
+    updateMaintenanceButton() {
+        const settings = this.loadData('maintenanceContact') || {
+            type: 'url',
+            url: 'https://docs.google.com/forms/d/e/1FAIpQLScaYoRhEz52za3Zv6OPTDoDo-2_H_rzFSrdzpYDGCrFj-tC6A/viewform',
+            phone: '',
+            label: 'Report to Maintenance'
+        };
+        
+        const button = document.getElementById('report-maintenance-btn');
+        if (button) {
+            button.innerHTML = `<i class="fas fa-${settings.type === 'url' ? 'external-link-alt' : 'phone'}"></i> ${settings.label}`;
+        }
+    }
+
+    reportToMaintenance() {
+        const settings = this.loadData('maintenanceContact') || {
+            type: 'url',
+            url: 'https://docs.google.com/forms/d/e/1FAIpQLScaYoRhEz52za3Zv6OPTDoDo-2_H_rzFSrdzpYDGCrFj-tC6A/viewform',
+            phone: '',
+            label: 'Report to Maintenance'
+        };
+        
+        if (settings.type === 'url' && settings.url) {
+            window.open(settings.url, '_blank');
+        } else if (settings.type === 'phone' && settings.phone) {
+            window.location.href = `tel:${settings.phone}`;
+        } else {
+            this.showNotification('Maintenance contact not configured. Please set it up first.', 'error');
         }
     }
 }
