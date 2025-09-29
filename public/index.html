@@ -1,89 +1,1309 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Welcome to Firebase Hosting</title>
-
-    <!-- update the version number as needed -->
-    <script defer src="/__/firebase/12.3.0/firebase-app-compat.js"></script>
-    <!-- include only the Firebase features as you need -->
-    <script defer src="/__/firebase/12.3.0/firebase-auth-compat.js"></script>
-    <script defer src="/__/firebase/12.3.0/firebase-database-compat.js"></script>
-    <script defer src="/__/firebase/12.3.0/firebase-firestore-compat.js"></script>
-    <script defer src="/__/firebase/12.3.0/firebase-functions-compat.js"></script>
-    <script defer src="/__/firebase/12.3.0/firebase-messaging-compat.js"></script>
-    <script defer src="/__/firebase/12.3.0/firebase-storage-compat.js"></script>
-    <script defer src="/__/firebase/12.3.0/firebase-analytics-compat.js"></script>
-    <script defer src="/__/firebase/12.3.0/firebase-remote-config-compat.js"></script>
-    <script defer src="/__/firebase/12.3.0/firebase-performance-compat.js"></script>
-    <!-- 
-      initialize the SDK after all desired features are loaded, set useEmulator to false
-      to avoid connecting the SDK to running emulators.
-    -->
-    <script defer src="/__/firebase/init.js?useEmulator=true"></script>
-
-    <style media="screen">
-      body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
-      #message { background: white; max-width: 360px; margin: 100px auto 16px; padding: 32px 24px; border-radius: 3px; }
-      #message h2 { color: #ffa100; font-weight: bold; font-size: 16px; margin: 0 0 8px; }
-      #message h1 { font-size: 22px; font-weight: 300; color: rgba(0,0,0,0.6); margin: 0 0 16px;}
-      #message p { line-height: 140%; margin: 16px 0 24px; font-size: 14px; }
-      #message a { display: block; text-align: center; background: #039be5; text-transform: uppercase; text-decoration: none; color: white; padding: 16px; border-radius: 4px; }
-      #message, #message a { box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); }
-      #load { color: rgba(0,0,0,0.4); text-align: center; font-size: 13px; }
-      @media (max-width: 600px) {
-        body, #message { margin-top: 0; background: white; box-shadow: none; }
-        body { border-top: 16px solid #ffa100; }
-      }
-    </style>
-  </head>
-  <body>
-    <div id="message">
-      <h2>Welcome</h2>
-      <h1>Firebase Hosting Setup Complete</h1>
-      <p>You're seeing this because you've successfully setup Firebase Hosting. Now it's time to go build something extraordinary!</p>
-      <a target="_blank" href="https://firebase.google.com/docs/hosting/">Open Hosting Documentation</a>
-    </div>
-    <p id="load">Firebase SDK Loading&hellip;</p>
-
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const loadEl = document.querySelector('#load');
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-        // // The Firebase SDK is initialized and available here!
-        //
-        // firebase.auth().onAuthStateChanged(user => { });
-        // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
-        // firebase.firestore().doc('/foo/bar').get().then(() => { });
-        // firebase.functions().httpsCallable('yourFunction')().then(() => { });
-        // firebase.messaging().requestPermission().then(() => { });
-        // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
-        // firebase.analytics(); // call to activate
-        // firebase.analytics().logEvent('tutorial_completed');
-        // firebase.performance(); // call to activate
-        //
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-
-        try {
-          let app = firebase.app();
-          let features = [
-            'auth', 
-            'database', 
-            'firestore',
-            'functions',
-            'messaging', 
-            'storage', 
-            'analytics', 
-            'remoteConfig',
-            'performance',
-          ].filter(feature => typeof app[feature] === 'function');
-          loadEl.textContent = `Firebase SDK loaded with ${features.join(', ')}`;
-        } catch (e) {
-          console.error(e);
-          loadEl.textContent = 'Error loading the Firebase SDK, check the console.';
-        }
-      });
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Household Manager - Chores & Laundry Scheduler</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getDatabase, ref, set, get, push, update, remove, onValue, off } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+        import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js';
+        import { getAnalytics, logEvent } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js';
+        
+        // Your Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyAh5OOqdznrhgDCUcEcyAQx1P4UarXzkbI",
+            authDomain: "household-manager-acfcd.firebaseapp.com",
+            projectId: "household-manager-acfcd",
+            storageBucket: "household-manager-acfcd.firebasestorage.app",
+            messagingSenderId: "884072693409",
+            appId: "1:884072693409:web:4cb417f15b29ec09007ae0",
+            measurementId: "G-TF3Y6KEZY0"
+        };
+        
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
+        const storage = getStorage(app);
+        const messaging = getMessaging(app);
+        const analytics = getAnalytics(app);
+        
+        // Make Firebase available globally
+        window.firebase = { 
+            auth, database, storage, messaging, analytics,
+            signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, 
+            GoogleAuthProvider, signInWithPopup,
+            ref, set, get, push, update, remove, onValue, off,
+            uploadBytes, getDownloadURL, deleteObject,
+            getToken, onMessage,
+            logEvent
+        };
     </script>
-  </body>
+</head>
+<body>
+    <!-- Mandatory Authentication Screen -->
+    <div id="auth-screen" class="auth-screen">
+        <div class="auth-container">
+            <div class="auth-header">
+                <h1>🏠 Household Manager</h1>
+                <p>Please choose how you'd like to access your household</p>
+            </div>
+            
+            <div class="auth-options">
+                <div class="auth-option-card google-option">
+                    <div class="auth-icon">
+                        <i class="fab fa-google"></i>
+                    </div>
+                    <h3>Sign in with Google</h3>
+                    <p>Access your household with your Google account for full features and data persistence</p>
+                    <button id="google-auth-btn" class="auth-btn google-btn">
+                        <i class="fab fa-google"></i>
+                        Continue with Google
+                    </button>
+                </div>
+                
+                <div class="auth-divider">
+                    <span>or</span>
+                </div>
+                
+                <div class="auth-option-card guest-option">
+                    <div class="auth-icon">
+                        <i class="fas fa-user-clock"></i>
+                    </div>
+                    <h3>Continue as Guest</h3>
+                    <p>Try the app without signing in. Data will be saved locally but won't sync across devices</p>
+                    <button id="guest-auth-btn" class="auth-btn guest-btn">
+                        <i class="fas fa-user-clock"></i>
+                        Continue as Guest
+                    </button>
+                </div>
+            </div>
+            
+            <div class="auth-footer">
+                <p><small>By continuing, you agree to our terms of service</small></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container" id="app-container" style="display: none;">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>🏠 Household Manager</h1>
+                <div class="user-profile" id="user-profile">
+                    <div class="profile-avatar" id="profile-avatar">
+                        <img src="" alt="Profile" id="profile-img" style="display: none;">
+                        <div class="avatar-placeholder" id="avatar-placeholder">👤</div>
+                    </div>
+                    <div class="profile-info">
+                        <div class="profile-name" id="profile-name">Alex Chen</div>
+                        <button class="profile-edit-btn" onclick="app.openProfileModal()" title="Edit Profile">
+                            <i class="fas fa-user-edit"></i>
+                        </button>
+                        <button class="signout-btn" onclick="app.signOut()" title="Sign Out">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <h3>Main</h3>
+                    <button class="nav-item active" data-tab="calendar">
+                        <i class="fas fa-calendar-week"></i>
+                        <span>Calendar</span>
+                    </button>
+                    <button class="nav-item" data-tab="chores">
+                        <i class="fas fa-broom"></i>
+                        <span>House Chores</span>
+                    </button>
+                    <button class="nav-item" data-tab="laundry">
+                        <i class="fas fa-tshirt"></i>
+                        <span>Laundry</span>
+                    </button>
+                </div>
+                
+                <div class="nav-section">
+                    <h3>Management</h3>
+                    <button class="nav-item" data-tab="inventory">
+                        <i class="fas fa-boxes"></i>
+                        <span>Inventory</span>
+                    </button>
+                    <button class="nav-item" data-tab="bills">
+                        <i class="fas fa-receipt"></i>
+                        <span>Bills</span>
+                    </button>
+                    <button class="nav-item" data-tab="maintenance">
+                        <i class="fas fa-tools"></i>
+                        <span>Maintenance</span>
+                    </button>
+                </div>
+                
+                <div class="nav-section">
+                    <h3>Social</h3>
+                    <button class="nav-item" data-tab="events">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Events</span>
+                    </button>
+                    <button class="nav-item" data-tab="roommates">
+                        <i class="fas fa-users"></i>
+                        <span>Roommates</span>
+                    </button>
+                </div>
+                
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Top Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <div class="view-controls" id="view-controls">
+                        <button class="view-btn" data-view="daily">Daily</button>
+                        <button class="view-btn active" data-view="weekly">Weekly</button>
+                        <button class="view-btn" data-view="monthly">Monthly</button>
+                    </div>
+                    <div class="current-date" id="current-date"></div>
+                </div>
+                <div class="header-right">
+                    <div class="quick-actions">
+                        <button class="quick-btn" id="chat-btn" title="Chat">
+                            <i class="fas fa-comments"></i>
+                            <span class="chat-badge" id="chat-badge" style="display: none;">0</span>
+                        </button>
+                        <button class="quick-btn" data-tab="personal" title="My Schedule">
+                            <i class="fas fa-user"></i>
+                        </button>
+                        <button class="quick-btn" data-tab="settings" title="Settings">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                        <button class="quick-btn" id="notifications-btn" title="Notifications">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-badge" id="notification-count" style="display: none;">0</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <!-- Calendar Tab -->
+            <div class="tab-content active" id="calendar">
+                <div class="chores-header">
+                    <h2>Weekly Calendar</h2>
+                    <div class="chore-actions">
+                        <button class="btn btn-primary" id="add-chore-btn">
+                            <i class="fas fa-plus"></i> Add Chore
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <button class="nav-arrow" id="prev-period">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <h3 id="current-period">This Week</h3>
+                        <button class="nav-arrow" id="next-period">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="calendar-grid" id="calendar-grid">
+                        <!-- Calendar will be generated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- House Chores Tab -->
+            <div class="tab-content" id="chores">
+                <div class="chores-header">
+                    <h2>House Chores Management</h2>
+                    <div class="chores-actions">
+                        <button class="btn btn-primary" id="add-chore-manage-btn" onclick="app.openModal('add-chore-modal')">
+                            <i class="fas fa-plus"></i> Add Chore
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="chores-list" id="chores-list">
+                    <!-- Chores will be listed here -->
+                </div>
+            </div>
+
+            <!-- Laundry Tab -->
+            <div class="tab-content" id="laundry">
+                <div class="laundry-header">
+                    <h2>Laundry Schedule</h2>
+                    <div class="laundry-actions">
+                        <div class="laundry-info">
+                            <span class="info-item">
+                                <i class="fas fa-clock"></i> 8 AM - 9 PM
+                            </span>
+                            <span class="info-item">
+                                <i class="fas fa-tshirt"></i> 1 washer & dryer
+                            </span>
+                            <span class="info-item">
+                                <i class="fas fa-info-circle"></i> Drag to select time
+                            </span>
+                        </div>
+                        <button class="btn btn-primary" id="reserve-laundry-btn" disabled>
+                            <i class="fas fa-calendar-plus"></i> Reserve Selected Time
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Laundry Status Indicator -->
+                <div class="laundry-status-indicator">
+                    <div class="status-item washer">
+                        <div class="status-dot available" id="washer-status"></div>
+                        <span>Washer Available</span>
+                    </div>
+                    <div class="status-item dryer">
+                        <div class="status-dot available" id="dryer-status"></div>
+                        <span>Dryer Available</span>
+                    </div>
+                </div>
+                
+                <!-- Color Legend -->
+                <div class="laundry-color-legend">
+                    <div class="color-legend-item">
+                        <div class="color-legend-dot washer"></div>
+                        <span>Washer</span>
+                    </div>
+                    <div class="color-legend-item">
+                        <div class="color-legend-dot dryer"></div>
+                        <span>Dryer</span>
+                    </div>
+                </div>
+                
+                <div class="laundry-calendar">
+                    <div class="calendar-navigation">
+                        <button class="nav-arrow" id="prev-week">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <h3 id="current-week">This Week</h3>
+                        <button class="nav-arrow" id="next-week">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="time-grid-container">
+                        <div class="time-grid" id="time-grid">
+                            <!-- Time grid will be generated here -->
+                        </div>
+                        <div class="selection-info" id="selection-info" style="display: none;">
+                            <span id="selection-text">No time selected</span>
+                            <button class="btn btn-small btn-secondary" id="clear-selection">Clear</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Personal Schedule Tab -->
+            <div class="tab-content" id="personal">
+                <div class="personal-header">
+                    <h2 id="personal-schedule-title">My Schedule</h2>
+                    <div class="personal-actions">
+                        <button class="btn btn-primary" id="add-personal-chore-btn">
+                            <i class="fas fa-plus"></i> Add Personal Task
+                        </button>
+                        <button class="btn btn-secondary" id="book-laundry-personal-btn">
+                            <i class="fas fa-tshirt"></i> Book Laundry
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="personal-content">
+                    <div class="personal-section">
+                        <h3>My Chores</h3>
+                        <div class="personal-chores" id="personal-chores">
+                            <!-- Personal chores will be listed here -->
+                        </div>
+                    </div>
+                    
+                    <div class="personal-section">
+                        <h3>My Laundry Bookings</h3>
+                        <div class="personal-laundry" id="personal-laundry">
+                            <!-- Personal laundry bookings will be listed here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Maintenance Tab -->
+            <div class="tab-content" id="maintenance">
+                <div class="maintenance-header">
+                    <h2>Maintenance Requests</h2>
+                    <div class="maintenance-actions">
+                        <button class="btn btn-primary" id="add-maintenance-btn">
+                            <i class="fas fa-plus"></i> Add Issue
+                        </button>
+                        <button class="btn btn-secondary" id="report-maintenance-btn" onclick="app.reportToMaintenance()">
+                            <i class="fas fa-external-link-alt"></i> Report to Maintenance
+                        </button>
+                        <button class="btn btn-outline" onclick="app.openMaintenanceContactModal()" title="Edit Contact Info">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="maintenance-content">
+                    <div class="maintenance-section">
+                        <h3>Current Issues</h3>
+                        <div class="maintenance-list" id="maintenance-list">
+                            <!-- Maintenance issues will be listed here -->
+                        </div>
+                    </div>
+                    
+                    <div class="maintenance-section">
+                        <h3>Filter Issues</h3>
+                        <div class="maintenance-filter">
+                            <label for="status-filter">Filter by Status:</label>
+                            <select id="status-filter">
+                                <option value="all">All Issues</option>
+                                <option value="not-reported">Not Reported</option>
+                                <option value="reported">Reported</option>
+                                <option value="fixing">Fixing</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventory Tab -->
+            <div class="tab-content" id="inventory">
+                <div class="inventory-header">
+                    <h2>Household Inventory</h2>
+                    <div class="inventory-actions">
+                        <button class="btn btn-primary" id="add-item-btn">
+                            <i class="fas fa-plus"></i> Add Item
+                        </button>
+                        <button class="btn btn-secondary" id="low-stock-btn">
+                            <i class="fas fa-exclamation-triangle"></i> Low Stock
+                        </button>
+                        <button class="btn btn-danger" id="out-of-stock-btn">
+                            <i class="fas fa-times-circle"></i> Out of Stock
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="inventory-content">
+                    <div class="inventory-filters">
+                        <select id="category-filter">
+                            <option value="all">All Categories</option>
+                            <option value="cleaning">Cleaning Supplies</option>
+                            <option value="groceries">Groceries</option>
+                            <option value="bathroom">Bathroom</option>
+                            <option value="kitchen">Kitchen</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <input type="text" id="search-items" placeholder="Search items...">
+                        <button class="btn btn-small btn-secondary" id="clear-filters-btn">
+                            <i class="fas fa-times"></i> Clear Filters
+                        </button>
+                    </div>
+                    
+                    <div class="inventory-grid" id="inventory-grid">
+                        <!-- Inventory items will be listed here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bills Tab -->
+            <div class="tab-content" id="bills">
+                <div class="bills-header">
+                    <h2>Bill Split & Tracker</h2>
+                    <div class="bills-actions">
+                        <div class="bills-filters">
+                            <select id="bill-status-filter" class="filter-select">
+                                <option value="all">All Bills</option>
+                                <option value="active">Active</option>
+                                <option value="paid">Paid</option>
+                                <option value="overdue">Overdue</option>
+                            </select>
+                            <select id="bill-period-filter" class="filter-select">
+                                <option value="all">All Time</option>
+                                <option value="september-2025">September 2025</option>
+                                <option value="october-2025">October 2025</option>
+                                <option value="november-2025">November 2025</option>
+                                <option value="december-2025">December 2025</option>
+                                <option value="january-2026">January 2026</option>
+                                <option value="february-2026">February 2026</option>
+                                <option value="march-2026">March 2026</option>
+                                <option value="april-2026">April 2026</option>
+                                <option value="may-2026">May 2026</option>
+                                <option value="june-2026">June 2026</option>
+                                <option value="july-2026">July 2026</option>
+                                <option value="august-2026">August 2026</option>
+                                <option value="september-2026">September 2026</option>
+                            </select>
+                            <div class="bills-search">
+                                <input type="text" id="bills-search-input" placeholder="Search bills..." class="search-input">
+                                <button id="bills-search-btn" class="btn btn-secondary btn-small">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" id="add-bill-btn">
+                            <i class="fas fa-plus"></i> Add Bill
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bills-content">
+                    <div class="bills-summary">
+                        <div class="summary-card">
+                            <h3>Total Owed</h3>
+                            <span class="amount" id="total-owed">$0.00</span>
+                        </div>
+                        <div class="summary-card">
+                            <h3>You Owe</h3>
+                            <span class="amount" id="you-owe">$0.00</span>
+                        </div>
+                        <div class="summary-card">
+                            <h3>Owed to You</h3>
+                            <span class="amount" id="owed-to-you">$0.00</span>
+                        </div>
+                    </div>
+                    
+                    <div class="bills-list" id="bills-list">
+                        <!-- Bills will be listed here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Events Tab -->
+            <div class="tab-content" id="events">
+                <div class="events-header">
+                    <h2>Events & Polling</h2>
+                    <div class="events-actions">
+                        <button class="btn btn-primary" id="create-event-btn">
+                            <i class="fas fa-plus"></i> Create Event
+                        </button>
+                        <button class="btn btn-secondary" id="create-poll-btn">
+                            <i class="fas fa-poll"></i> Create Poll
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="events-content">
+                    <div class="events-tabs">
+                        <button class="event-tab active" data-event-tab="upcoming">Upcoming</button>
+                        <button class="event-tab" data-event-tab="polls">Polls</button>
+                    </div>
+                    
+                    <div class="events-list" id="events-list">
+                        <!-- Events and polls will be listed here -->
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Roommates Tab -->
+            <div class="tab-content" id="roommates">
+                <div class="roommates-header">
+                    <h2>Roommates</h2>
+                    <button class="btn btn-primary" id="add-roommate-btn">
+                        <i class="fas fa-user-plus"></i> Add Roommate
+                    </button>
+                </div>
+                
+                <div class="roommates-list" id="roommates-list">
+                    <!-- Roommates will be listed here -->
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div class="tab-content" id="settings">
+                <div class="settings-header">
+                    <h2>Settings</h2>
+                </div>
+                
+                <div class="settings-content">
+                    <div class="setting-group">
+                        <h3>Notifications</h3>
+                        <label class="setting-item">
+                            <input type="checkbox" id="email-notifications">
+                            <span>Email notifications</span>
+                        </label>
+                        <label class="setting-item">
+                            <input type="checkbox" id="browser-notifications">
+                            <span>Browser notifications</span>
+                        </label>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <h3>Data Management</h3>
+                        <button class="btn btn-secondary" id="export-data">
+                            <i class="fas fa-download"></i> Export Data
+                        </button>
+                        <button class="btn btn-secondary" id="import-data">
+                            <i class="fas fa-upload"></i> Import Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal" id="add-roommate-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Roommate</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-roommate-form">
+                    <div class="form-group">
+                        <label for="roommate-name">Name</label>
+                        <input type="text" id="roommate-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="roommate-email">Email (optional)</label>
+                        <input type="email" id="roommate-email">
+                    </div>
+                    <div class="form-group">
+                        <label for="roommate-color">Color</label>
+                        <select id="roommate-color" class="color-picker">
+                            <option value="#FF6B6B" style="background-color: #FF6B6B; color: white;">Red</option>
+                            <option value="#FF8C00" style="background-color: #FF8C00; color: white;">Orange</option>
+                            <option value="#FFD700" style="background-color: #FFD700; color: black;">Yellow</option>
+                            <option value="#32CD32" style="background-color: #32CD32; color: white;">Green</option>
+                            <option value="#00CED1" style="background-color: #00CED1; color: white;">Cyan</option>
+                            <option value="#1E90FF" style="background-color: #1E90FF; color: white;">Blue</option>
+                            <option value="#8A2BE2" style="background-color: #8A2BE2; color: white;">Purple</option>
+                            <option value="#FF1493" style="background-color: #FF1493; color: white;">Pink</option>
+                            <option value="#FF4500" style="background-color: #FF4500; color: white;">Red Orange</option>
+                            <option value="#00FF7F" style="background-color: #00FF7F; color: black;">Spring Green</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-roommate">Cancel</button>
+                <button class="btn btn-primary" id="save-roommate">Add Roommate</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="add-chore-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Chore</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-chore-form">
+                    <div class="form-group">
+                        <label for="chore-name">Chore Name</label>
+                        <input type="text" id="chore-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="chore-frequency">Frequency</label>
+                        <select id="chore-frequency">
+                            <option value="none">No repetition</option>
+                            <option value="daily">Daily</option>
+                            <option value="weekly" selected>Weekly</option>
+                            <option value="monthly">Monthly</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="chore-assigned">Assigned To</label>
+                        <select id="chore-assigned">
+                            <option value="random">🎲 Random (Fair Rotation)</option>
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="chore-start-date">Start Date</label>
+                        <input type="date" id="chore-start-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="chore-duration">Duration (minutes)</label>
+                        <input type="number" id="chore-duration" min="5" max="480" value="30">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-chore">Cancel</button>
+                <button class="btn btn-primary" id="save-chore">Add Chore</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="book-laundry-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Book Laundry Time</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="book-laundry-form">
+                    <div class="form-group">
+                        <label for="laundry-date">Date</label>
+                        <input type="date" id="laundry-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="laundry-start-time">Start Time</label>
+                        <input type="time" id="laundry-start-time" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="laundry-end-time">End Time</label>
+                        <input type="time" id="laundry-end-time" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="laundry-type">Machine Type</label>
+                        <select id="laundry-type" required>
+                            <option value="washer">Washer</option>
+                            <option value="dryer">Dryer</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="laundry-user">Booked By</label>
+                        <input type="text" id="laundry-user" readonly value="You" style="background-color: #f5f5f5; color: #666;">
+                    </div>
+                    <div class="form-group">
+                        <label for="laundry-notes">Notes (optional)</label>
+                        <textarea id="laundry-notes" placeholder="e.g., Delicates, Dark load"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-laundry">Cancel</button>
+                <button class="btn btn-primary" id="save-laundry">Book Time</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal" id="edit-chore-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Chore</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-chore-form">
+                    <div class="form-group">
+                        <label for="edit-chore-name">Chore Name</label>
+                        <input type="text" id="edit-chore-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-chore-frequency">Frequency</label>
+                        <select id="edit-chore-frequency">
+                            <option value="none">No repetition</option>
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-chore-assigned">Assigned To</label>
+                        <select id="edit-chore-assigned">
+                            <option value="random">🎲 Random (Fair Rotation)</option>
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-chore-start-date">Start Date</label>
+                        <input type="date" id="edit-chore-start-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-chore-duration">Duration (minutes)</label>
+                        <input type="number" id="edit-chore-duration" min="5" max="480" value="30">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" id="delete-chore">Delete Chore</button>
+                <button class="btn btn-secondary" id="cancel-edit-chore">Cancel</button>
+                <button class="btn btn-primary" id="save-edit-chore">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="chore-details-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Chore Details</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="chore-detail-item">
+                    <span class="detail-label">Name:</span>
+                    <span class="detail-value" id="detail-chore-name"></span>
+                </div>
+                <div class="chore-detail-item">
+                    <span class="detail-label">Assigned to:</span>
+                    <span class="detail-value" id="detail-chore-assigned"></span>
+                </div>
+                <div class="chore-detail-item">
+                    <span class="detail-label">Frequency:</span>
+                    <span class="detail-value" id="detail-chore-frequency"></span>
+                </div>
+                <div class="chore-detail-item">
+                    <span class="detail-label">Start Date:</span>
+                    <span class="detail-value" id="detail-chore-start-date"></span>
+                </div>
+                <div class="chore-detail-item">
+                    <span class="detail-label">Duration:</span>
+                    <span class="detail-value" id="detail-chore-duration"></span>
+                </div>
+                <div class="chore-detail-item">
+                    <span class="detail-label">Color:</span>
+                    <span class="detail-value" id="detail-chore-color">Based on assigned person's color</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="edit-chore-from-details">Edit Chore</button>
+                <button class="btn btn-danger" id="delete-chore-from-details">Delete Chore</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal" id="add-personal-chore-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Personal Task</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-personal-chore-form">
+                    <div class="form-group">
+                        <label for="personal-chore-name">Task Name</label>
+                        <input type="text" id="personal-chore-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="personal-chore-date">Due Date</label>
+                        <input type="date" id="personal-chore-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="personal-chore-time">Time (optional)</label>
+                        <input type="time" id="personal-chore-time">
+                    </div>
+                    <div class="form-group">
+                        <label for="personal-chore-notes">Notes</label>
+                        <textarea id="personal-chore-notes" placeholder="Add any additional details..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-personal-chore">Cancel</button>
+                <button class="btn btn-primary" id="save-personal-chore">Add Task</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="add-maintenance-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Maintenance Issue</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-maintenance-form">
+                    <div class="form-group">
+                        <label for="maintenance-title">Issue Title</label>
+                        <input type="text" id="maintenance-title" placeholder="e.g., Leaky faucet in kitchen" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="maintenance-area">Area of House</label>
+                        <select id="maintenance-area" required>
+                            <option value="">Select area</option>
+                            <option value="kitchen">Kitchen</option>
+                            <option value="bathroom">Bathroom</option>
+                            <option value="living-room">Living Room</option>
+                            <option value="bedroom">Bedroom</option>
+                            <option value="basement">Basement</option>
+                            <option value="garage">Garage</option>
+                            <option value="exterior">Exterior</option>
+                            <option value="appliances">Appliances</option>
+                            <option value="heating-cooling">Heating/Cooling</option>
+                            <option value="electrical">Electrical</option>
+                            <option value="plumbing">Plumbing</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="maintenance-priority">Priority</label>
+                        <select id="maintenance-priority" required>
+                            <option value="low">Low - Can wait</option>
+                            <option value="medium" selected>Medium - Should be fixed soon</option>
+                            <option value="high">High - Needs immediate attention</option>
+                            <option value="urgent">Urgent - Safety hazard</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="maintenance-description">Description</label>
+                        <textarea id="maintenance-description" placeholder="Describe the issue in detail..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="maintenance-reporter">Reported By</label>
+                        <select id="maintenance-reporter">
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-maintenance">Cancel</button>
+                <button class="btn btn-primary" id="save-maintenance">Add Issue</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="edit-maintenance-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Maintenance Issue</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-maintenance-form">
+                    <div class="form-group">
+                        <label for="edit-maintenance-title">Issue Title</label>
+                        <input type="text" id="edit-maintenance-title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-maintenance-area">Area of House</label>
+                        <select id="edit-maintenance-area" required>
+                            <option value="">Select area</option>
+                            <option value="kitchen">Kitchen</option>
+                            <option value="bathroom">Bathroom</option>
+                            <option value="living-room">Living Room</option>
+                            <option value="bedroom">Bedroom</option>
+                            <option value="basement">Basement</option>
+                            <option value="garage">Garage</option>
+                            <option value="exterior">Exterior</option>
+                            <option value="appliances">Appliances</option>
+                            <option value="heating-cooling">Heating/Cooling</option>
+                            <option value="electrical">Electrical</option>
+                            <option value="plumbing">Plumbing</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-maintenance-priority">Priority</label>
+                        <select id="edit-maintenance-priority" required>
+                            <option value="low">Low - Can wait</option>
+                            <option value="medium">Medium - Should be fixed soon</option>
+                            <option value="high">High - Needs immediate attention</option>
+                            <option value="urgent">Urgent - Safety hazard</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-maintenance-status">Status</label>
+                        <select id="edit-maintenance-status" required>
+                            <option value="not-reported">Not Reported</option>
+                            <option value="reported">Reported</option>
+                            <option value="fixing">Fixing</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-maintenance-description">Description</label>
+                        <textarea id="edit-maintenance-description" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" id="delete-maintenance">Delete Issue</button>
+                <button class="btn btn-secondary" id="cancel-edit-maintenance">Cancel</button>
+                <button class="btn btn-primary" id="save-edit-maintenance">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Modals -->
+    <div class="modal" id="add-item-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Inventory Item</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-item-form">
+                    <div class="form-group">
+                        <label for="item-name">Item Name</label>
+                        <input type="text" id="item-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="item-category">Category</label>
+                        <select id="item-category" required>
+                            <option value="cleaning">Cleaning Supplies</option>
+                            <option value="groceries">Groceries</option>
+                            <option value="bathroom">Bathroom</option>
+                            <option value="kitchen">Kitchen</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="item-quantity">Current Quantity</label>
+                        <input type="number" id="item-quantity" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="item-min-quantity">Minimum Quantity (Low Stock Alert)</label>
+                        <input type="number" id="item-min-quantity" min="0" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="item-purchased-by">Purchased By</label>
+                        <select id="item-purchased-by">
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="item-cost">Cost (optional)</label>
+                        <input type="number" id="item-cost" min="0" step="0.01">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-item">Cancel</button>
+                <button class="btn btn-primary" id="save-item">Add Item</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bill Modals -->
+    <div class="modal" id="add-bill-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Bill</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-bill-form">
+                    <div class="form-group">
+                        <label for="bill-description">Description</label>
+                        <input type="text" id="bill-description" placeholder="e.g., Rent, Utilities, Groceries" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="bill-amount">Total Amount</label>
+                        <input type="number" id="bill-amount" min="0" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="bill-paid-by">Paid By</label>
+                        <select id="bill-paid-by">
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="bill-split-type">Split Type</label>
+                        <select id="bill-split-type">
+                            <option value="equal">Equal Split</option>
+                            <option value="percentage">Percentage</option>
+                            <option value="custom">Custom Amounts</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="split-details">
+                        <!-- Dynamic split options will be added here -->
+                    </div>
+                    <div class="form-group">
+                        <label for="bill-due-date">Due Date</label>
+                        <input type="date" id="bill-due-date" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-bill">Cancel</button>
+                <button class="btn btn-primary" id="save-bill">Add Bill</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Modals -->
+    <div class="modal" id="create-event-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create Event</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="create-event-form">
+                    <div class="form-group">
+                        <label for="event-title">Event Title</label>
+                        <input type="text" id="event-title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="event-description">Description</label>
+                        <textarea id="event-description"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="event-date">Date</label>
+                        <input type="date" id="event-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="event-time">Time</label>
+                        <input type="time" id="event-time">
+                    </div>
+                    <div class="form-group">
+                        <label for="event-location">Location</label>
+                        <input type="text" id="event-location">
+                    </div>
+                    <div class="form-group">
+                        <label for="event-creator">Created By</label>
+                        <select id="event-creator">
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-event">Cancel</button>
+                <button class="btn btn-primary" id="save-event">Create Event</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="create-poll-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create Poll</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="create-poll-form">
+                    <div class="form-group">
+                        <label for="poll-question">Poll Question</label>
+                        <input type="text" id="poll-question" placeholder="What should we do for dinner tonight?" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="poll-description">Description (optional)</label>
+                        <textarea id="poll-description" placeholder="Add more details about this poll..."></textarea>
+                    </div>
+                    
+                    <!-- Poll Type Selection -->
+                    <div class="form-group">
+                        <label for="poll-type">Poll Type</label>
+                        <select id="poll-type" onchange="app.updatePollType()">
+                            <option value="multiple-choice">Multiple Choice</option>
+                            <option value="yes-no">Yes/No Question</option>
+                            <option value="rating">Rating (1-5 stars)</option>
+                            <option value="ranking">Ranking (order preferences)</option>
+                            <option value="date-picker">Date Selection</option>
+                            <option value="time-picker">Time Selection</option>
+                        </select>
+                    </div>
+
+                    <!-- Dynamic Options Container -->
+                    <div class="form-group">
+                        <label>Poll Options</label>
+                        <div id="poll-options-container">
+                            <!-- Options will be dynamically generated based on type -->
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="poll-expiry">Expiry Date (optional)</label>
+                        <input type="date" id="poll-expiry">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="poll-anonymous"> Anonymous voting
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-poll">Cancel</button>
+                <button class="btn btn-primary" id="save-poll">Create Poll</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Photo Upload Modal -->
+    <div class="modal" id="profile-photo-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Update Profile Photo</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="photo-upload-area" id="photo-upload-area">
+                    <div class="upload-placeholder">
+                        <i class="fas fa-camera"></i>
+                        <p>Click to upload photo or drag and drop</p>
+                        <input type="file" id="photo-input" accept="image/*" style="display: none;">
+                    </div>
+                    <div class="photo-preview" id="photo-preview" style="display: none;">
+                        <img id="preview-img" alt="Preview">
+                        <button class="btn btn-small btn-danger" id="remove-photo">Remove</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="profile-name-input">Display Name</label>
+                    <input type="text" id="profile-name-input" value="Alex Chen">
+                </div>
+                <div class="form-group">
+                    <label for="profile-email-input">Email</label>
+                    <input type="email" id="profile-email-input" value="alex.chen@usc.edu">
+                </div>
+                <div class="form-group">
+                    <label for="profile-color-input">Your Color</label>
+                    <div class="color-picker-container">
+                        <select id="profile-color-input" class="color-picker">
+                            <option value="#FF6B6B" style="background-color: #FF6B6B; color: white;">Red</option>
+                            <option value="#FF8C00" style="background-color: #FF8C00; color: white;">Orange</option>
+                            <option value="#FFD700" style="background-color: #FFD700; color: black;">Yellow</option>
+                            <option value="#32CD32" style="background-color: #32CD32; color: white;">Green</option>
+                            <option value="#00CED1" style="background-color: #00CED1; color: white;">Cyan</option>
+                            <option value="#1E90FF" style="background-color: #1E90FF; color: white;">Blue</option>
+                            <option value="#8A2BE2" style="background-color: #8A2BE2; color: white;">Purple</option>
+                            <option value="#FF1493" style="background-color: #FF1493; color: white;">Pink</option>
+                            <option value="#FF4500" style="background-color: #FF4500; color: white;">Red Orange</option>
+                            <option value="#00FF7F" style="background-color: #00FF7F; color: black;">Spring Green</option>
+                        </select>
+                        <span class="color-preview-text">This color will be used for your chores on the calendar</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-profile">Cancel</button>
+                <button class="btn btn-primary" id="save-profile">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal" id="login-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Welcome to Household Manager</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="welcome-section">
+                    <h4>Welcome to Household Manager</h4>
+                    <p>Sign in with your Google account to get started</p>
+                    <button id="google-signin-btn" class="google-signin-btn">
+                        <i class="fab fa-google"></i>
+                        Continue with Google
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Household Code Modal -->
+    <div id="household-code-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Join or Create Household</h3>
+            </div>
+            <div class="modal-body">
+                <div class="household-options">
+                    <div class="option-card" id="create-household-option">
+                        <h4>Create New Household</h4>
+                        <p>Start a new household and invite your roommates</p>
+                        <button class="btn btn-primary" id="create-household-btn">Create Household</button>
+                    </div>
+                    
+                    <div class="household-divider">
+                        <span>or</span>
+                    </div>
+                    
+                    <div class="option-card" id="join-household-option">
+                        <h4>Join Existing Household</h4>
+                        <p>Enter the household code to join an existing household</p>
+                        <div class="form-group">
+                            <input type="text" id="join-household-code" placeholder="Enter household code" maxlength="6">
+                        </div>
+                        <button class="btn btn-secondary" id="join-household-btn">Join Household</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Maintenance Contact Modal -->
+    <div id="maintenance-contact-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Maintenance Contact Settings</h3>
+                <span class="close" onclick="app.hideMaintenanceContactModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="maintenance-contact-type">Contact Type:</label>
+                    <select id="maintenance-contact-type" onchange="app.updateMaintenanceContactType()">
+                        <option value="url">Website/Form URL</option>
+                        <option value="phone">Phone Number</option>
+                    </select>
+                </div>
+                <div class="form-group" id="url-group">
+                    <label for="maintenance-url">Maintenance Form URL:</label>
+                    <input type="url" id="maintenance-url" placeholder="https://example.com/maintenance-form">
+                    <small>Enter the URL for your maintenance request form</small>
+                </div>
+                <div class="form-group" id="phone-group" style="display: none;">
+                    <label for="maintenance-phone">Maintenance Phone Number:</label>
+                    <input type="tel" id="maintenance-phone" placeholder="(555) 123-4567">
+                    <small>Enter the phone number for maintenance requests</small>
+                </div>
+                <div class="form-group">
+                    <label for="maintenance-label">Button Label:</label>
+                    <input type="text" id="maintenance-label" placeholder="Report to Maintenance">
+                    <small>Customize the button text</small>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" onclick="app.saveMaintenanceContact()">Save Settings</button>
+                    <button class="btn btn-secondary" onclick="app.hideMaintenanceContactModal()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div class="notifications" id="notifications"></div>
+
+    <!-- Chat Panel -->
+    <div class="chat-panel" id="chat-panel">
+        <div class="chat-header">
+            <div class="chat-title">
+                <i class="fas fa-comments"></i>
+                <span>Household Chat</span>
+            </div>
+            <button class="chat-close" id="chat-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="chat-content">
+            <div class="chat-search-container">
+                <input type="text" id="chat-search" placeholder="Search messages..." class="chat-search-input">
+                <button class="chat-search-btn" id="chat-search-btn">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <!-- Messages will be rendered here -->
+            </div>
+            <div class="chat-input-container">
+                <div class="chat-input-wrapper">
+                    <input type="text" id="chat-input" placeholder="Type a message..." maxlength="500">
+                    <button class="chat-send-btn" id="chat-send-btn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <div class="chat-typing" id="chat-typing" style="display: none;">
+                    <span class="typing-indicator">Someone is typing...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
 </html>
+
