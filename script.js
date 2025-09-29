@@ -1,4 +1,4 @@
-// Firebase Realtime Database Manager
+﻿// Firebase Realtime Database Manager
 class RealtimeDatabaseManager {
     constructor(firebase) {
         this.firebase = firebase;
@@ -840,7 +840,7 @@ class HouseholdManager {
             if (select) {
                 // For chore selects, add Random option first
                 if (selectId.includes('chore-assigned')) {
-                    select.innerHTML = '<option value="random">🎲 Random (Fair Rotation)</option>';
+                    select.innerHTML = '<option value="random">ðŸŽ² Random (Fair Rotation)</option>';
                 } else {
                     select.innerHTML = '<option value="">Select a roommate</option>';
                 }
@@ -858,7 +858,7 @@ class HouseholdManager {
     generateRandomColor() {
         const colors = [
             '#FFB6C1', '#DDA0DD', '#98FB98', '#FFD700', '#87CEEB',
-            '#000080', '#F5F5DC', '#FF7F50', '#FFA07A', '#008080'
+            '#FFE4B5', '#F0E68C', '#FF7F50', '#FFA07A', '#20B2AA'
         ];
         
         // Get used colors
@@ -1289,7 +1289,7 @@ class HouseholdManager {
                 <div class="personal-item-info">
                     <div class="personal-item-name">${chore.name}</div>
                     <div class="personal-item-details">
-                        ${chore.frequency.charAt(0).toUpperCase() + chore.frequency.slice(1)} • ${chore.duration} minutes
+                        ${chore.frequency.charAt(0).toUpperCase() + chore.frequency.slice(1)} â€¢ ${chore.duration} minutes
                     </div>
                 </div>
                 <div class="personal-item-actions">
@@ -1320,8 +1320,8 @@ class HouseholdManager {
                     <div class="personal-item-info">
                         <div class="personal-item-name">${task.name}</div>
                         <div class="personal-item-details">
-                            ${formattedDate}${task.time ? ' • ' + task.time : ''}
-                            ${task.notes ? ' • ' + task.notes : ''}
+                            ${formattedDate}${task.time ? ' â€¢ ' + task.time : ''}
+                            ${task.notes ? ' â€¢ ' + task.notes : ''}
                         </div>
                     </div>
                     <div class="personal-item-actions">
@@ -1366,8 +1366,8 @@ class HouseholdManager {
                 <div class="personal-item-info">
                     <div class="personal-item-name">Laundry Booking</div>
                     <div class="personal-item-details">
-                        ${this.formatDate(startTime)} • ${this.formatTime(startTime)} - ${this.formatTime(endTime)}
-                        ${booking.notes ? ` • ${booking.notes}` : ''}
+                        ${this.formatDate(startTime)} â€¢ ${this.formatTime(startTime)} - ${this.formatTime(endTime)}
+                        ${booking.notes ? ` â€¢ ${booking.notes}` : ''}
                     </div>
                 </div>
                 <div class="personal-item-actions">
@@ -1454,7 +1454,7 @@ class HouseholdManager {
             assignmentItem.className = 'assignment-item';
             assignmentItem.innerHTML = `
                 <div class="assignment-chore">${item.chore.name}</div>
-                <div class="assignment-assignee" style="color: ${item.roommate.color}">→ ${item.roommate.name}</div>
+                <div class="assignment-assignee" style="color: ${item.roommate.color}">â†’ ${item.roommate.name}</div>
             `;
             container.appendChild(assignmentItem);
         });
@@ -2673,17 +2673,17 @@ class HouseholdManager {
             // Get bill category icon
             const getBillIcon = (description) => {
                 const desc = description.toLowerCase();
-                if (desc.includes('rent') || desc.includes('mortgage')) return '🏠';
-                if (desc.includes('electric') || desc.includes('power')) return '⚡';
-                if (desc.includes('water')) return '💧';
-                if (desc.includes('gas') || desc.includes('heating')) return '🔥';
-                if (desc.includes('internet') || desc.includes('wifi')) return '📶';
-                if (desc.includes('cable') || desc.includes('tv')) return '📺';
-                if (desc.includes('phone') || desc.includes('mobile')) return '📱';
-                if (desc.includes('grocery') || desc.includes('food')) return '🛒';
-                if (desc.includes('insurance')) return '🛡️';
-                if (desc.includes('maintenance') || desc.includes('repair')) return '🔧';
-                return '📄';
+                if (desc.includes('rent') || desc.includes('mortgage')) return 'ðŸ ';
+                if (desc.includes('electric') || desc.includes('power')) return 'âš¡';
+                if (desc.includes('water')) return 'ðŸ’§';
+                if (desc.includes('gas') || desc.includes('heating')) return 'ðŸ”¥';
+                if (desc.includes('internet') || desc.includes('wifi')) return 'ðŸ“¶';
+                if (desc.includes('cable') || desc.includes('tv')) return 'ðŸ“º';
+                if (desc.includes('phone') || desc.includes('mobile')) return 'ðŸ“±';
+                if (desc.includes('grocery') || desc.includes('food')) return 'ðŸ›’';
+                if (desc.includes('insurance')) return 'ðŸ›¡ï¸';
+                if (desc.includes('maintenance') || desc.includes('repair')) return 'ðŸ”§';
+                return 'ðŸ“„';
             };
 
             // Get progress percentage
@@ -3162,7 +3162,7 @@ class HouseholdManager {
                 </div>
                 <div class="event-item-details">
                     <div class="event-item-description">${event.description}</div>
-                    <div class="event-item-location">📍 ${event.location}</div>
+                    <div class="event-item-location">ðŸ“ ${event.location}</div>
                     <div class="event-item-creator">Created by ${creator}${youIndicator}</div>
                 </div>
             `;
@@ -3254,11 +3254,11 @@ class HouseholdManager {
                     <div class="poll-option-inputs">
                         <div class="poll-option-item">
                             <input type="text" class="poll-option-input" placeholder="Option 1" required>
-                            <button type="button" class="btn btn-small btn-danger" onclick="this.parentElement.remove()">×</button>
+                            <button type="button" class="btn btn-small btn-danger" onclick="this.parentElement.remove()">Ã—</button>
                         </div>
                         <div class="poll-option-item">
                             <input type="text" class="poll-option-input" placeholder="Option 2" required>
-                            <button type="button" class="btn btn-small btn-danger" onclick="this.parentElement.remove()">×</button>
+                            <button type="button" class="btn btn-small btn-danger" onclick="this.parentElement.remove()">Ã—</button>
                         </div>
                     </div>
                     <button type="button" class="btn btn-small btn-secondary" onclick="app.addPollOption()">
@@ -3365,7 +3365,7 @@ class HouseholdManager {
         optionDiv.className = 'poll-option-item';
         optionDiv.innerHTML = `
             <input type="text" class="poll-option-input" placeholder="Option ${optionCount + 1}" required>
-            <button type="button" class="btn btn-small btn-danger" onclick="this.parentElement.remove()">×</button>
+            <button type="button" class="btn btn-small btn-danger" onclick="this.parentElement.remove()">Ã—</button>
         `;
         
         container.appendChild(optionDiv);
@@ -3571,7 +3571,7 @@ class HouseholdManager {
             "On it!",
             "Will do",
             "Perfect",
-            "👍",
+            "ðŸ‘",
             "Sure thing",
             "No problem"
         ];
@@ -3868,7 +3868,7 @@ class HouseholdManager {
         } else {
             profileImg.style.display = 'none';
             avatarPlaceholder.style.display = 'block';
-            avatarPlaceholder.textContent = this.userProfile.avatar || '👤';
+            avatarPlaceholder.textContent = this.userProfile.avatar || 'ðŸ‘¤';
         }
         
         // Update profile container with user's color
@@ -4050,11 +4050,11 @@ class HouseholdManager {
                             <option value="#98FB98" ${roommate.color === '#98FB98' ? 'selected' : ''} style="background-color: #98FB98; color: black;">Mint Green</option>
                             <option value="#FFD700" ${roommate.color === '#FFD700' ? 'selected' : ''} style="background-color: #FFD700; color: black;">Gold</option>
                             <option value="#87CEEB" ${roommate.color === '#87CEEB' ? 'selected' : ''} style="background-color: #87CEEB; color: black;">Sky Blue</option>
-                            <option value="#000080" ${roommate.color === '#000080' ? 'selected' : ''} style="background-color: #000080; color: white;">Navy Blue</option>
-                            <option value="#F5F5DC" ${roommate.color === '#F5F5DC' ? 'selected' : ''} style="background-color: #F5F5DC; color: black;">Cream</option>
+                            <option value="#FFE4B5" ${roommate.color === '#FFE4B5' ? 'selected' : ''} style="background-color: #FFE4B5; color: black;">Moccasin</option>
+                            <option value="#F0E68C" ${roommate.color === '#F0E68C' ? 'selected' : ''} style="background-color: #F0E68C; color: black;">Khaki</option>
                             <option value="#FF7F50" ${roommate.color === '#FF7F50' ? 'selected' : ''} style="background-color: #FF7F50; color: white;">Coral</option>
                             <option value="#FFA07A" ${roommate.color === '#FFA07A' ? 'selected' : ''} style="background-color: #FFA07A; color: white;">Peach</option>
-                            <option value="#008080" ${roommate.color === '#008080' ? 'selected' : ''} style="background-color: #008080; color: white;">Teal</option>
+                            <option value="#20B2AA" ${roommate.color === '#20B2AA' ? 'selected' : ''} style="background-color: #20B2AA; color: white;">Light Sea Green</option>
                         </select>
                     </div>
                 </div>
