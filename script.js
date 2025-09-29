@@ -4882,6 +4882,9 @@ class HouseholdManager {
         // Update profile display
         this.updateProfileDisplay();
         
+        // Update roommates display
+        this.renderRoommates();
+        
         // Show guest notification
         this.showNotification('Welcome! You are using guest mode. Data will be saved locally but won\'t sync across devices.', 'info');
         
