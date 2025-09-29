@@ -115,9 +115,6 @@
                         <button class="btn btn-primary" id="add-chore-btn">
                             <i class="fas fa-plus"></i> Add Chore
                         </button>
-                        <button class="btn btn-secondary" id="random-assign-btn">
-                            <i class="fas fa-random"></i> Random Assign
-                        </button>
                     </div>
                 </div>
                 
@@ -682,22 +679,6 @@
         </div>
     </div>
 
-    <div class="modal" id="random-assign-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Random Assignment</h3>
-                <button class="close-btn">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to randomly assign all unassigned chores to roommates?</p>
-                <p class="text-muted">This will assign chores to roommates who don't already have chores for the selected period.</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="app.closeModal('random-assign-modal')">Cancel</button>
-                <button class="btn btn-primary" onclick="app.performRandomAssignment(); app.closeModal('random-assign-modal')">Assign Randomly</button>
-            </div>
-        </div>
-    </div>
 
     <div class="modal" id="add-personal-chore-modal">
         <div class="modal-content">

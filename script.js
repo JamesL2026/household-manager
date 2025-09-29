@@ -411,12 +411,6 @@ class HouseholdManager {
             }
         });
         
-        // Random Assign Button - Use event delegation
-        document.addEventListener('click', (e) => {
-            if (e.target.id === 'random-assign-btn' || e.target.closest('#random-assign-btn')) {
-                this.confirmRandomAssignment();
-            }
-        });
 
         // Edit Chore Modal
         document.getElementById('save-edit-chore').addEventListener('click', () => this.saveEditChore());
@@ -502,6 +496,23 @@ class HouseholdManager {
         this.currentView = view;
         document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
         document.querySelector(`[data-view="${view}"]`).classList.add('active');
+        
+        // Update calendar title based on view
+        const titleElement = document.querySelector('#calendar h2');
+        if (titleElement) {
+            switch(view) {
+                case 'daily':
+                    titleElement.textContent = 'Daily Calendar';
+                    break;
+                case 'weekly':
+                    titleElement.textContent = 'Weekly Calendar';
+                    break;
+                case 'monthly':
+                    titleElement.textContent = 'Monthly Calendar';
+                    break;
+            }
+        }
+        
         this.renderCalendar();
     }
 
@@ -1171,32 +1182,6 @@ class HouseholdManager {
         });
     }
 
-    confirmRandomAssignment() {
-        this.openModal('random-assign-modal');
-    }
-
-    performRandomAssignment() {
-        const unassignedChores = this.chores.filter(chore => !chore.assignedTo);
-        const availableRoommates = [...this.roommates];
-        
-        if (unassignedChores.length === 0) {
-            this.showNotification('No unassigned chores to assign!', 'info');
-            return;
-        }
-        
-        unassignedChores.forEach(chore => {
-            const randomIndex = Math.floor(Math.random() * availableRoommates.length);
-            const assignedRoommate = availableRoommates[randomIndex];
-            chore.assignedTo = assignedRoommate.id;
-        });
-
-        this.saveData('chores', this.chores);
-        this.renderCalendar();
-        this.renderChoresList();
-        this.renderPersonalSchedule();
-        this.closeModal('random-assign-modal');
-        this.showNotification('Chores assigned randomly!', 'success');
-    }
 
     // Calendar Rendering
     renderCalendar() {
@@ -1290,14 +1275,17 @@ class HouseholdManager {
 
         this.currentChoreId = choreId;
         const roommate = this.roommates.find(r => r.id === chore.assignedTo);
+        const isCurrentUser = chore.assignedTo === this.settings.currentUserId;
+        const assignedName = isCurrentUser ? this.userProfile.name : (roommate?.name || 'Unknown');
+        const youIndicator = isCurrentUser ? ' (YOU)' : '';
 
         // Populate the details modal
         document.getElementById('detail-chore-name').textContent = chore.name;
-        document.getElementById('detail-chore-assigned').textContent = roommate ? roommate.name : 'Unknown';
+        document.getElementById('detail-chore-assigned').textContent = assignedName + youIndicator;
         document.getElementById('detail-chore-frequency').textContent = chore.frequency.charAt(0).toUpperCase() + chore.frequency.slice(1);
         document.getElementById('detail-chore-start-date').textContent = chore.startDate ? this.formatDate(new Date(chore.startDate)) : 'Not set';
         document.getElementById('detail-chore-duration').textContent = `${chore.duration} minutes`;
-        document.getElementById('detail-chore-color').textContent = roommate ? `${roommate.name}'s color (${roommate.color})` : 'Unknown person';
+        document.getElementById('detail-chore-color').textContent = 'Based on assigned person\'s color';
 
         this.openModal('chore-details-modal');
     }
@@ -3881,55 +3869,6 @@ class HouseholdManager {
         this.showNotification('Roommate information updated successfully!', 'success');
     }
 
-    // Show chore details modal
-    showChoreDetails(choreId) {
-        const chore = this.chores.find(c => c.id === choreId);
-        if (!chore) return;
-
-        const roommate = this.roommates.find(r => r.id === chore.assignedTo);
-        
-        // Create a simple modal for chore details
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.id = 'chore-details-modal';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Chore Details</h3>
-                    <button class="close-btn">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="chore-detail-item">
-                        <label>Name:</label>
-                        <span>${chore.name}</span>
-                    </div>
-                    <div class="chore-detail-item">
-                        <label>Assigned to:</label>
-                        <span style="color: ${roommate ? roommate.color : '#1a73e8'}">${roommate ? roommate.name : 'Unknown'}</span>
-                    </div>
-                    <div class="chore-detail-item">
-                        <label>Frequency:</label>
-                        <span>${chore.frequency.charAt(0).toUpperCase() + chore.frequency.slice(1)}</span>
-                    </div>
-                    <div class="chore-detail-item">
-                        <label>Duration:</label>
-                        <span>${chore.duration} minutes</span>
-                    </div>
-                    <div class="chore-detail-item">
-                        <label>Created:</label>
-                        <span>${this.formatDate(new Date(chore.createdAt))}</span>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" onclick="app.closeModal('chore-details-modal')">Close</button>
-                    <button class="btn btn-primary" onclick="app.editChore('${chore.id}'); app.closeModal('chore-details-modal')">Edit</button>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-        this.openModal('chore-details-modal');
-    }
 
     // Enhanced Notifications System
     showNotificationsPanel() {
