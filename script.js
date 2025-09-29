@@ -1,6 +1,137 @@
-// Household Manager Application
+// Firebase Realtime Database Manager
+class RealtimeDatabaseManager {
+    constructor(firebase) {
+        this.firebase = firebase;
+        this.listeners = {};
+    }
+
+    async saveToRealtimeDatabase(path, data) {
+        if (!this.householdId || !this.firebase) return;
+
+        try {
+            const fullPath = `households/${this.householdId}/${path}`;
+            const dataRef = this.firebase.ref(this.firebase.database, fullPath);
+            
+            // Add timestamp and user info
+            const dataWithMeta = {
+                ...data,
+                updatedAt: new Date().toISOString(),
+                updatedBy: this.currentUser.uid
+            };
+            
+            await this.firebase.set(dataRef, dataWithMeta);
+            console.log('Successfully saved to Realtime Database:', fullPath);
+        } catch (error) {
+            console.error('Error saving to Firebase Realtime Database:', error);
+        }
+    }
+
+    async deleteFromRealtimeDatabase(path) {
+        if (!this.householdId) return;
+
+        try {
+            const fullPath = `households/${this.householdId}/${path}`;
+            const dataRef = this.firebase.ref(this.firebase.database, fullPath);
+            await this.firebase.remove(dataRef);
+            console.log('Successfully deleted from Realtime Database:', fullPath);
+        } catch (error) {
+            console.error('Error deleting from Firebase Realtime Database:', error);
+        }
+    }
+
+    setupRealtimeListeners(householdId, app) {
+        if (!householdId) {
+            console.log('No household ID, skipping real-time listeners');
+            return;
+        }
+
+        console.log('Setting up real-time listeners for household:', householdId);
+
+        try {
+            // Set up real-time listeners for each data type
+            const dataTypes = [
+                { key: 'roommates', render: 'renderRoommates' },
+                { key: 'chores', render: 'renderCalendar' },
+                { key: 'bills', render: 'renderBills' },
+                { key: 'chatMessages', render: 'renderChatMessages' },
+                { key: 'laundryBookings', render: 'renderLaundrySchedule' },
+                { key: 'inventoryItems', render: 'renderInventory' },
+                { key: 'events', render: 'renderUpcomingEvents' },
+                { key: 'polls', render: 'renderPolls' },
+                { key: 'notifications', render: 'updateNotificationBadge' }
+            ];
+            
+            for (const dataType of dataTypes) {
+                const dataRef = this.firebase.ref(this.firebase.database, `households/${householdId}/${dataType.key}`);
+                
+                // Remove existing listener if it exists
+                if (this.listeners[dataType.key]) {
+                    this.firebase.off(this.listeners[dataType.key]);
+                }
+                
+                // Set up new listener
+                this.listeners[dataType.key] = this.firebase.onValue(dataRef, (snapshot) => {
+                    const data = snapshot.val();
+                    console.log(`Real-time update for ${dataType.key}:`, data);
+                    
+                    // Convert to array if it's an object
+                    let dataArray = data;
+                    if (data && typeof data === 'object' && !Array.isArray(data)) {
+                        dataArray = Object.values(data);
+                    } else if (!data) {
+                        dataArray = [];
+                    }
+                    
+                    // Update local data
+                    app[dataType.key] = dataArray;
+                    
+                    // Save to localStorage for offline access
+                    localStorage.setItem(`household_${dataType.key}`, JSON.stringify(dataArray));
+                    
+                    // Re-render the appropriate section
+                    if (app[dataType.render]) {
+                        app[dataType.render]();
+                    }
+                });
+            }
+
+            console.log('All real-time listeners set up successfully');
+        } catch (error) {
+            console.error('Error setting up real-time listeners:', error);
+        }
+    }
+
+    cleanupListeners() {
+        for (const [key, listener] of Object.entries(this.listeners)) {
+            this.firebase.off(listener);
+            console.log(`Cleaned up listener for ${key}`);
+        }
+        this.listeners = {};
+    }
+}
+
+// Household Manager Application with Firebase Integration
 class HouseholdManager {
     constructor() {
+        console.log('HouseholdManager constructor called');
+        
+        // Firebase integration
+        this.firebase = window.firebase;
+        this.currentUser = null;
+        this.householdId = null;
+        this.isOnline = false;
+        this.isGuest = false;
+        
+        console.log('Firebase available:', !!this.firebase);
+        
+        // Clear all existing data for fresh start
+        this.clearAllData();
+        
+        // Initialize Firebase listeners
+        this.initFirebase();
+        
+        // Set up mandatory authentication
+        this.setupMandatoryAuth();
         this.roommates = this.loadData('roommates') || [];
         this.chores = this.loadData('chores') || [];
         this.personalTasks = this.loadData('personalTasks') || [];
@@ -18,6 +149,11 @@ class HouseholdManager {
         this.choreCompletions = this.loadData('choreCompletions') || [];
         this.roommatePreferences = this.loadData('roommatePreferences') || {};
         this.notifications = this.loadData('notifications') || [];
+        
+        // Add default chore if none exist
+        if (this.chores.length === 0) {
+            this.addDefaultChore();
+        }
         
         this.settings = this.loadData('settings') || {
             emailNotifications: false,
@@ -105,10 +241,149 @@ class HouseholdManager {
     }
 
     // Data Management
-    saveData(key, data) {
+    clearAllData() {
+        console.log('Clearing all data for fresh start...');
+        // Clear localStorage
+        const keysToRemove = [
+            'household_roommates',
+            'household_chores', 
+            'household_bills',
+            'household_inventoryItems',
+            'household_events',
+            'household_polls',
+            'household_chatMessages',
+            'household_notifications',
+            'household_laundryBookings',
+            'household_maintenanceIssues',
+            'household_personalTasks',
+            'household_userProfile',
+            'household_settings',
+            'pending_sync'
+        ];
+        
+        keysToRemove.forEach(key => {
+            localStorage.removeItem(key);
+        });
+        
+        console.log('All data cleared for fresh start');
+    }
+
+    addDefaultChore() {
+        console.log('Adding default chore: Take out trash');
+        const defaultChore = {
+            id: 'chore-' + Date.now(),
+            name: 'Take out trash',
+            frequency: 'weekly',
+            assignedTo: 'user1',
+            duration: 15,
+            startDate: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            completed: false
+        };
+        
+        this.chores = [defaultChore];
+        this.saveData('chores', this.chores);
+        console.log('Default chore added:', defaultChore);
+    }
+
+    async saveData(key, data) {
+        console.log('Saving data:', key, data);
+        
+        // Always save to localStorage for persistence
         localStorage.setItem(`household_${key}`, JSON.stringify(data));
+        
+        // If user is authenticated and online, save to Firebase
+        if (this.currentUser && this.isOnline && this.householdId) {
+            console.log('Saving to Firebase:', key);
+            try {
+                await this.saveToFirebase(key, data);
+                console.log('Successfully saved to Firebase:', key);
+                
+                // Log analytics event
+                this.firebase.logEvent(this.firebase.analytics, 'data_saved', {
+                    data_type: key,
+                    user_id: this.currentUser.uid,
+                    household_id: this.householdId
+                });
+            } catch (error) {
+                console.error('Error saving to Firebase:', error);
+                // Mark data for sync when back online
+                this.markForSync(key, data);
+            }
+        } else {
+            console.log('Not saving to Firebase - User:', !!this.currentUser, 'Online:', this.isOnline, 'Household:', this.householdId);
+            // Mark data for sync when back online
+            this.markForSync(key, data);
+        }
+        
         // Simulate real-time sync by broadcasting changes
         this.broadcastChange(key, data);
+    }
+
+    // Enhanced data loading with persistence
+    loadData(key) {
+        const data = localStorage.getItem(`household_${key}`);
+        if (data) {
+            try {
+                return JSON.parse(data);
+            } catch (error) {
+                console.error('Error parsing stored data:', error);
+                return null;
+            }
+        }
+        return null;
+    }
+
+    // Auto-save all data when user logs in
+    async autoSaveAllData() {
+        console.log('Auto-saving all data for persistence...');
+        
+        const dataKeys = [
+            'userProfile',
+            'roommates', 
+            'chores',
+            'bills',
+            'inventoryItems',
+            'events',
+            'polls',
+            'chatMessages',
+            'notifications',
+            'laundryBookings',
+            'maintenanceIssues',
+            'personalTasks'
+        ];
+        
+        for (const key of dataKeys) {
+            const data = this[key];
+            if (data && Array.isArray(data) ? data.length > 0 : data) {
+                await this.saveData(key, data);
+            }
+        }
+        
+        console.log('Auto-save completed');
+    }
+
+    markForSync(key, data) {
+        // Store data that needs to be synced when back online
+        const pendingSync = JSON.parse(localStorage.getItem('pending_sync') || '{}');
+        pendingSync[key] = data;
+        localStorage.setItem('pending_sync', JSON.stringify(pendingSync));
+    }
+
+    async syncPendingData() {
+        const pendingSync = JSON.parse(localStorage.getItem('pending_sync') || '{}');
+        if (Object.keys(pendingSync).length > 0) {
+            console.log('Syncing pending data:', Object.keys(pendingSync));
+            for (const [key, data] of Object.entries(pendingSync)) {
+                try {
+                    await this.saveToFirebase(key, data);
+                    console.log('Synced pending data:', key);
+                } catch (error) {
+                    console.error('Error syncing pending data:', key, error);
+                }
+            }
+            localStorage.removeItem('pending_sync');
+        }
     }
 
     loadData(key) {
@@ -3588,7 +3863,7 @@ class HouseholdManager {
         photoInput.value = '';
     }
 
-    saveProfile() {
+    async saveProfile() {
         const name = document.getElementById('profile-name-input').value;
         const email = document.getElementById('profile-email-input').value;
         const color = document.getElementById('profile-color-input').value;
@@ -3604,30 +3879,66 @@ class HouseholdManager {
         this.userProfile.email = email;
         this.userProfile.color = color;
         
+        // Handle photo upload with Firebase Storage
+        if (photoInput.files[0]) {
+            try {
+                const file = photoInput.files[0];
+                const fileName = `profile-${this.currentUser?.uid || 'default'}-${Date.now()}.${file.name.split('.').pop()}`;
+                const storageRef = this.firebase.ref(this.firebase.storage, `profile-pictures/${fileName}`);
+                
+                // Show loading
+                this.showNotification('Uploading profile picture...', 'info');
+                
+                // Upload to Firebase Storage
+                const snapshot = await this.firebase.uploadBytes(storageRef, file);
+                const downloadURL = await this.firebase.getDownloadURL(snapshot.ref);
+                
+                this.userProfile.avatar = downloadURL;
+                this.userProfile.avatarPath = `profile-pictures/${fileName}`;
+                
+                // Log analytics event
+                this.firebase.logEvent(this.firebase.analytics, 'profile_picture_uploaded', {
+                    user_id: this.currentUser?.uid,
+                    file_size: file.size,
+                    file_type: file.type
+                });
+                
+                this.updateProfileDisplay();
+                await this.saveData('userProfile', this.userProfile);
+                this.showNotification('Profile updated successfully!', 'success');
+            } catch (error) {
+                console.error('Error uploading profile picture:', error);
+                this.showNotification('Error uploading profile picture', 'error');
+                // Fallback to local storage
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.userProfile.avatar = e.target.result;
+                    this.updateProfileDisplay();
+                    this.saveData('userProfile', this.userProfile);
+                };
+                reader.readAsDataURL(photoInput.files[0]);
+            }
+        } else {
+            // Save user profile data and update display
+            await this.saveData('userProfile', this.userProfile);
+            this.updateProfileDisplay();
+        }
+        
         // Also update the current user's name and color in roommates list
         const currentUser = this.roommates.find(r => r.id === this.settings.currentUserId);
         if (currentUser) {
             currentUser.name = name;
             currentUser.color = color;
-            this.saveData('roommates', this.roommates);
+            await this.saveData('roommates', this.roommates);
         }
-            
-            if (photoInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                this.userProfile.avatar = e.target.result;
-                    this.updateProfileDisplay();
-                this.saveData('userProfile', this.userProfile);
-                this.renderRoommates(); // Refresh roommates display
-                };
-                reader.readAsDataURL(photoInput.files[0]);
-            } else {
-            // Save user profile data and update display
-            this.saveData('userProfile', this.userProfile);
-                this.updateProfileDisplay();
-            this.renderRoommates(); // Refresh roommates display
-        }
-
+        
+        // Log analytics event
+        this.firebase.logEvent(this.firebase.analytics, 'profile_updated', {
+            user_id: this.currentUser?.uid,
+            has_avatar: !!this.userProfile.avatar
+        });
+        
+        this.renderRoommates(); // Refresh roommates display
         this.closeModal('profile-photo-modal');
         this.showNotification('Profile updated successfully!', 'success');
     }
@@ -4252,6 +4563,609 @@ class HouseholdManager {
                 return false;
         }
     }
+
+    // Firebase Integration Methods
+    async initFirebase() {
+        // Wait for Firebase to be available
+        let attempts = 0;
+        while (!this.firebase && attempts < 50) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+
+        if (!this.firebase) {
+            console.error('Firebase not loaded after 5 seconds');
+            return;
+        }
+
+        console.log('Firebase initialized successfully');
+
+        // Initialize push notifications
+        this.initPushNotifications();
+
+        // Listen for authentication state changes
+        this.firebase.onAuthStateChanged(this.firebase.auth, (user) => {
+            console.log('Auth state changed:', user ? 'User signed in' : 'User signed out');
+            if (user) {
+                this.currentUser = user;
+                this.isOnline = true;
+                this.loadUserData();
+                this.hideLoginModal();
+                this.hideAuthScreen(); // Hide mandatory auth screen
+                
+                // Log user sign in
+                this.firebase.logEvent(this.firebase.analytics, 'login', {
+                    method: 'google'
+                });
+            } else {
+                this.currentUser = null;
+                this.isOnline = false;
+                this.showAuthScreen(); // Show mandatory auth screen instead of login modal
+            }
+        });
+    }
+
+    async initPushNotifications() {
+        try {
+            // Request notification permission
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                console.log('Notification permission granted');
+                
+                // Get FCM token
+                const token = await this.firebase.getToken(this.firebase.messaging, {
+                    vapidKey: 'YOUR_VAPID_KEY' // You'll need to generate this in Firebase Console
+                });
+                
+                if (token) {
+                    console.log('FCM Token:', token);
+                    // Save token to user's document in Firestore
+                    if (this.currentUser) {
+                        await this.firebase.setDoc(
+                            this.firebase.doc(this.firebase.db, 'users', this.currentUser.uid),
+                            { fcmToken: token },
+                            { merge: true }
+                        );
+                    }
+                }
+                
+                // Listen for foreground messages
+                this.firebase.onMessage(this.firebase.messaging, (payload) => {
+                    console.log('Message received:', payload);
+                    this.showNotification(payload.notification.title, 'info');
+                });
+            } else {
+                console.log('Notification permission denied');
+            }
+        } catch (error) {
+            console.error('Error initializing push notifications:', error);
+        }
+    }
+
+    async loadUserData() {
+        if (!this.currentUser) return;
+
+        try {
+            console.log('Loading user data for:', this.currentUser.uid);
+            
+            // Load user's household ID
+            const userDoc = await this.firebase.getDoc(this.firebase.doc(this.firebase.db, 'users', this.currentUser.uid));
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                this.householdId = userData.householdId;
+                this.userProfile = userData.profile || this.userProfile;
+                
+                console.log('User household ID:', this.householdId);
+                
+                // Save user data locally for persistence
+                this.saveData('userProfile', this.userProfile);
+                this.saveData('householdId', this.householdId);
+                
+                // Load household data
+                await this.loadHouseholdData();
+                
+                // Sync any pending data
+                await this.syncPendingData();
+                
+                // Auto-save all data for persistence
+                await this.autoSaveAllData();
+                
+                // Log analytics event
+                this.firebase.logEvent(this.firebase.analytics, 'user_data_loaded', {
+                    user_id: this.currentUser.uid,
+                    household_id: this.householdId
+                });
+            } else {
+                console.log('User document not found, creating new user profile');
+                // Create user document if it doesn't exist
+                await this.firebase.setDoc(
+                    this.firebase.doc(this.firebase.db, 'users', this.currentUser.uid),
+                    {
+                        name: this.userProfile.name,
+                        email: this.userProfile.email,
+                        profile: this.userProfile,
+                        createdAt: new Date().toISOString()
+                    }
+                );
+                
+                // Save locally
+                this.saveData('userProfile', this.userProfile);
+            }
+        } catch (error) {
+            console.error('Error loading user data:', error);
+            this.showNotification('Error loading user data. Please try again.', 'error');
+        }
+    }
+
+    async loadHouseholdData() {
+        if (!this.householdId) {
+            console.log('No household ID, skipping real-time listeners');
+            return;
+        }
+
+        console.log('Setting up real-time listeners for household:', this.householdId);
+
+        try {
+            // Initialize Realtime Database manager
+            this.initRealtimeDatabase();
+            
+            // Set up real-time listeners using Realtime Database
+            this.realtimeDB.setupRealtimeListeners(this.householdId, this);
+
+            console.log('All real-time listeners set up successfully');
+
+        } catch (error) {
+            console.error('Error loading household data:', error);
+        }
+    }
+
+    async saveToFirebase(path, data) {
+        if (!this.householdId || !this.firebase) return;
+
+        try {
+            const fullPath = `households/${this.householdId}/${path}`;
+            const dataRef = this.firebase.ref(this.firebase.database, fullPath);
+            
+            // Add timestamp and user info
+            const dataWithMeta = {
+                ...data,
+                updatedAt: new Date().toISOString(),
+                updatedBy: this.currentUser.uid
+            };
+            
+            await this.firebase.set(dataRef, dataWithMeta);
+            console.log('Successfully saved to Realtime Database:', fullPath);
+        } catch (error) {
+            console.error('Error saving to Firebase Realtime Database:', error);
+        }
+    }
+
+    // Initialize Realtime Database manager
+    initRealtimeDatabase() {
+        if (!this.realtimeDB) {
+            this.realtimeDB = new RealtimeDatabaseManager(this.firebase);
+        }
+    }
+
+    // Set up mandatory authentication screen
+    setupMandatoryAuth() {
+        console.log('Setting up mandatory authentication');
+        
+        // Show auth screen by default
+        this.showAuthScreen();
+        
+        // Set up event listeners for auth options
+        document.addEventListener('DOMContentLoaded', () => {
+            const googleBtn = document.getElementById('google-auth-btn');
+            const guestBtn = document.getElementById('guest-auth-btn');
+            
+            if (googleBtn) {
+                googleBtn.addEventListener('click', () => {
+                    this.handleGoogleAuth();
+                });
+            }
+            
+            if (guestBtn) {
+                guestBtn.addEventListener('click', () => {
+                    this.handleGuestAuth();
+                });
+            }
+        });
+    }
+
+    // Show authentication screen
+    showAuthScreen() {
+        const authScreen = document.getElementById('auth-screen');
+        const appContainer = document.getElementById('app-container');
+        
+        if (authScreen) {
+            authScreen.style.display = 'flex';
+        }
+        
+        if (appContainer) {
+            appContainer.style.display = 'none';
+        }
+    }
+
+    // Hide authentication screen and show app
+    hideAuthScreen() {
+        const authScreen = document.getElementById('auth-screen');
+        const appContainer = document.getElementById('app-container');
+        
+        if (authScreen) {
+            authScreen.style.display = 'none';
+        }
+        
+        if (appContainer) {
+            appContainer.style.display = 'flex';
+        }
+    }
+
+    // Handle Google authentication
+    async handleGoogleAuth() {
+        try {
+            console.log('Starting Google authentication');
+            await this.signInWithGoogle();
+        } catch (error) {
+            console.error('Google authentication failed:', error);
+            this.showNotification('Google sign-in failed. Please try again.', 'error');
+        }
+    }
+
+    // Handle guest authentication
+    handleGuestAuth() {
+        console.log('User chose guest mode');
+        this.isGuest = true;
+        this.currentUser = {
+            uid: 'guest_' + Date.now(),
+            displayName: 'Guest User',
+            email: 'guest@example.com',
+            photoURL: null
+        };
+        
+        // Set up guest profile
+        this.userProfile = {
+            name: 'Guest User',
+            email: 'guest@example.com',
+            avatar: null,
+            color: this.generateRandomColor()
+        };
+        
+        // Save guest profile
+        this.saveData('userProfile', this.userProfile);
+        
+        // Hide auth screen and show app
+        this.hideAuthScreen();
+        
+        // Update profile display
+        this.updateProfileDisplay();
+        
+        // Show guest notification
+        this.showNotification('Welcome! You are using guest mode. Data will be saved locally but won\'t sync across devices.', 'info');
+        
+        console.log('Guest authentication completed');
+    }
+
+    async deleteFromFirebase(path) {
+        if (!this.householdId) return;
+
+        try {
+            const fullPath = `households/${this.householdId}/${path}`;
+            const dataRef = this.firebase.ref(this.firebase.database, fullPath);
+            await this.firebase.remove(dataRef);
+            console.log('Successfully deleted from Realtime Database:', fullPath);
+        } catch (error) {
+            console.error('Error deleting from Firebase Realtime Database:', error);
+        }
+    }
+
+    showLoginModal() {
+        const modal = document.getElementById('login-modal');
+        if (modal) {
+            modal.style.display = 'flex';
+            console.log('Login modal shown');
+        } else {
+            console.error('Login modal not found');
+        }
+    }
+
+    hideLoginModal() {
+        const modal = document.getElementById('login-modal');
+        if (modal) {
+            modal.style.display = 'none';
+            console.log('Login modal hidden');
+        }
+    }
+
+    async signIn(email, password) {
+        try {
+            console.log('Attempting sign in...');
+            const userCredential = await this.firebase.signInWithEmailAndPassword(this.firebase.auth, email, password);
+            console.log('Sign in successful:', userCredential.user);
+            
+            // Log analytics event
+            this.firebase.logEvent(this.firebase.analytics, 'login', {
+                method: 'email',
+                user_id: userCredential.user.uid
+            });
+            
+            this.showNotification('Signed in successfully!', 'success');
+        } catch (error) {
+            console.error('Sign in error:', error);
+            
+            // Log failed login attempt
+            this.firebase.logEvent(this.firebase.analytics, 'login_failed', {
+                method: 'email',
+                error_code: error.code
+            });
+            
+            this.showNotification('Sign in failed: ' + error.message, 'error');
+        }
+    }
+
+    async signInWithGoogle() {
+        try {
+            console.log('Attempting Google sign in...');
+            const provider = new this.firebase.GoogleAuthProvider();
+            const result = await this.firebase.signInWithPopup(this.firebase.auth, provider);
+            const user = result.user;
+            
+            console.log('Google sign in successful:', user);
+            
+            // Check if user already exists
+            const userDoc = await this.firebase.getDoc(this.firebase.doc(this.firebase.db, 'users', user.uid));
+            
+            if (userDoc.exists()) {
+                // Existing user - load their data
+                const userData = userDoc.data();
+                this.householdId = userData.householdId;
+                this.userProfile = userData.profile || this.userProfile;
+                
+                // Save user data locally for persistence
+                this.saveData('userProfile', this.userProfile);
+                this.saveData('householdId', this.householdId);
+                
+                // Load household data
+                await this.loadHouseholdData();
+                
+                this.showNotification('Welcome back!', 'success');
+            } else {
+                // New user - show household code modal
+                this.userProfile.name = user.displayName || user.email.split('@')[0];
+                this.userProfile.email = user.email;
+                this.userProfile.avatar = user.photoURL;
+                this.userProfile.color = this.generateRandomColor();
+                
+                // Save profile locally
+                this.saveData('userProfile', this.userProfile);
+                
+                // Show household code modal
+                this.showHouseholdCodeModal();
+                return;
+            }
+            
+            // Update profile display immediately
+            this.updateProfileDisplay();
+            
+            // Log analytics event
+            this.firebase.logEvent(this.firebase.analytics, 'login', {
+                method: 'google',
+                user_id: user.uid
+            });
+            
+        } catch (error) {
+            console.error('Google sign in error:', error);
+            
+            // Log failed login attempt
+            this.firebase.logEvent(this.firebase.analytics, 'login_failed', {
+                method: 'google',
+                error_code: error.code
+            });
+            
+            this.showNotification('Google sign in failed: ' + error.message, 'error');
+        }
+    }
+
+    showHouseholdCodeModal() {
+        const modal = document.getElementById('household-code-modal');
+        if (modal) {
+            modal.style.display = 'flex';
+            console.log('Household code modal shown');
+        }
+    }
+
+    hideHouseholdCodeModal() {
+        const modal = document.getElementById('household-code-modal');
+        if (modal) {
+            modal.style.display = 'none';
+            console.log('Household code modal hidden');
+        }
+    }
+
+    async createHousehold() {
+        try {
+            console.log('Creating new household...');
+            
+            // Generate household code
+            const householdCode = this.generateHouseholdCode();
+            
+            // Create household document
+            const householdRef = await this.firebase.addDoc(this.firebase.collection(this.firebase.db, 'households'), {
+                code: householdCode,
+                name: `${this.userProfile.name}'s Household`,
+                createdAt: new Date().toISOString(),
+                createdBy: this.currentUser.uid
+            });
+            
+            this.householdId = householdRef.id;
+            
+            // Add user to household
+            await this.firebase.setDoc(
+                this.firebase.doc(this.firebase.db, 'households', this.householdId, 'roommates', this.currentUser.uid),
+                {
+                    name: this.userProfile.name,
+                    email: this.userProfile.email,
+                    color: this.userProfile.color,
+                    userId: this.currentUser.uid,
+                    joinedAt: new Date().toISOString()
+                }
+            );
+            
+            // Save user data
+            await this.firebase.setDoc(
+                this.firebase.doc(this.firebase.db, 'users', this.currentUser.uid),
+                {
+                    name: this.userProfile.name,
+                    email: this.userProfile.email,
+                    householdId: this.householdId,
+                    profile: this.userProfile,
+                    createdAt: new Date().toISOString()
+                }
+            );
+            
+            // Save locally
+            this.saveData('householdId', this.householdId);
+            this.saveData('userProfile', this.userProfile);
+            
+            // Load household data
+            await this.loadHouseholdData();
+            
+            this.hideHouseholdCodeModal();
+            this.updateProfileDisplay();
+            this.showNotification(`Household created! Code: ${householdCode}`, 'success');
+            
+        } catch (error) {
+            console.error('Error creating household:', error);
+            this.showNotification('Error creating household: ' + error.message, 'error');
+        }
+    }
+
+    async joinHousehold(householdCode) {
+        try {
+            console.log('Joining household with code:', householdCode);
+            
+            // Find household by code
+            const householdQuery = this.firebase.query(
+                this.firebase.collection(this.firebase.db, 'households'),
+                this.firebase.where('code', '==', householdCode)
+            );
+            const householdSnapshot = await this.firebase.getDocs(householdQuery);
+            
+            if (householdSnapshot.empty) {
+                throw new Error('Household code not found');
+            }
+            
+            const householdDoc = householdSnapshot.docs[0];
+            this.householdId = householdDoc.id;
+            
+            // Add user to household
+            await this.firebase.setDoc(
+                this.firebase.doc(this.firebase.db, 'households', this.householdId, 'roommates', this.currentUser.uid),
+                {
+                    name: this.userProfile.name,
+                    email: this.userProfile.email,
+                    color: this.userProfile.color,
+                    userId: this.currentUser.uid,
+                    joinedAt: new Date().toISOString()
+                }
+            );
+            
+            // Save user data
+            await this.firebase.setDoc(
+                this.firebase.doc(this.firebase.db, 'users', this.currentUser.uid),
+                {
+                    name: this.userProfile.name,
+                    email: this.userProfile.email,
+                    householdId: this.householdId,
+                    profile: this.userProfile,
+                    createdAt: new Date().toISOString()
+                }
+            );
+            
+            // Save locally
+            this.saveData('householdId', this.householdId);
+            this.saveData('userProfile', this.userProfile);
+            
+            // Load household data
+            await this.loadHouseholdData();
+            
+            this.hideHouseholdCodeModal();
+            this.updateProfileDisplay();
+            this.showNotification('Joined household successfully!', 'success');
+            
+        } catch (error) {
+            console.error('Error joining household:', error);
+            this.showNotification('Error joining household: ' + error.message, 'error');
+        }
+    }
+
+    async signUp(name, email, password, householdCode) {
+        try {
+            console.log('Attempting sign up...');
+            const userCredential = await this.firebase.createUserWithEmailAndPassword(this.firebase.auth, email, password);
+            const user = userCredential.user;
+            console.log('User created:', user);
+            
+            // Create or join household
+            let householdId = householdCode;
+            if (!householdId) {
+                console.log('Creating new household...');
+                // Create new household
+                const householdRef = await this.firebase.addDoc(this.firebase.collection(this.firebase.db, 'households'), {
+                    name: 'My Household',
+                    createdAt: new Date().toISOString(),
+                    createdBy: user.uid
+                });
+                householdId = householdRef.id;
+                console.log('Household created:', householdId);
+            }
+
+            console.log('Saving user data...');
+            
+            // Auto-update user profile with signup information
+            this.userProfile.name = name;
+            this.userProfile.email = email;
+            this.userProfile.color = this.generateRandomColor();
+            
+            // Save user data
+            await this.firebase.setDoc(this.firebase.doc(this.firebase.db, 'users', user.uid), {
+                name: name,
+                email: email,
+                householdId: householdId,
+                profile: this.userProfile
+            });
+            
+            // Save profile locally
+            this.saveData('userProfile', this.userProfile);
+            
+            // Update profile display immediately
+            this.updateProfileDisplay();
+
+            console.log('Adding user to household...');
+            // Add user to household roommates
+            await this.firebase.addDoc(this.firebase.collection(this.firebase.db, 'households', householdId, 'roommates'), {
+                name: name,
+                email: email,
+                color: this.generateRandomColor(),
+                userId: user.uid,
+                createdAt: new Date().toISOString()
+            });
+
+            this.showNotification('Account created successfully!', 'success');
+        } catch (error) {
+            console.error('Sign up error:', error);
+            this.showNotification('Sign up failed: ' + error.message, 'error');
+        }
+    }
+
+    async signOut() {
+        try {
+            await this.firebase.signOut(this.firebase.auth);
+            this.showNotification('Signed out successfully!', 'success');
+        } catch (error) {
+            this.showNotification('Sign out failed: ' + error.message, 'error');
+        }
+    }
 }
 
 // Initialize the application when DOM is ready
@@ -4280,7 +5194,140 @@ document.addEventListener('DOMContentLoaded', () => {
         window.app.saveData('chores', window.app.chores);
         window.app.renderCalendar();
     }
+
+    // Login Modal Event Listeners
+    setupLoginModal();
 });
+
+function setupLoginModal() {
+    console.log('Setting up login modal...');
+    
+    // Wait for elements to be available
+    setTimeout(() => {
+        // Tab switching
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        console.log('Found tab buttons:', tabButtons.length);
+        
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const tab = e.target.dataset.tab;
+                console.log('Tab clicked:', tab);
+                
+                // Update tab buttons
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                // Update forms
+                document.querySelectorAll('.login-form').forEach(f => f.classList.remove('active'));
+                const form = document.getElementById(tab + '-form');
+                if (form) {
+                    form.classList.add('active');
+                }
+            });
+        });
+
+        // Google Sign-In button
+        const googleSignInBtn = document.getElementById('google-signin-btn');
+        if (googleSignInBtn) {
+            console.log('Found Google sign in button');
+            googleSignInBtn.addEventListener('click', () => {
+                console.log('Google sign in clicked');
+                window.app.signInWithGoogle();
+            });
+        } else {
+            console.error('Google sign in button not found');
+        }
+
+        // Sign In button
+        const signInBtn = document.getElementById('signin-btn');
+        if (signInBtn) {
+            console.log('Found sign in button');
+            signInBtn.addEventListener('click', () => {
+                const email = document.getElementById('login-email')?.value;
+                const password = document.getElementById('login-password')?.value;
+                
+                console.log('Sign in attempt:', { email, password: '***' });
+                
+                if (email && password) {
+                    window.app.signIn(email, password);
+                } else {
+                    window.app.showNotification('Please fill in all fields', 'error');
+                }
+            });
+        } else {
+            console.error('Sign in button not found');
+        }
+
+        // Sign Up button
+        const signUpBtn = document.getElementById('signup-btn');
+        if (signUpBtn) {
+            console.log('Found sign up button');
+            signUpBtn.addEventListener('click', () => {
+                const name = document.getElementById('signup-name')?.value;
+                const email = document.getElementById('signup-email')?.value;
+                const password = document.getElementById('signup-password')?.value;
+                const householdCode = document.getElementById('household-code')?.value;
+                
+                console.log('Sign up attempt:', { name, email, password: '***', householdCode });
+                
+                if (name && email && password) {
+                    window.app.signUp(name, email, password, householdCode);
+                } else {
+                    window.app.showNotification('Please fill in all required fields', 'error');
+                }
+            });
+        } else {
+            console.error('Sign up button not found');
+        }
+
+        // Household Code Modal buttons
+        const createHouseholdBtn = document.getElementById('create-household-btn');
+        if (createHouseholdBtn) {
+            console.log('Found create household button');
+            createHouseholdBtn.addEventListener('click', () => {
+                console.log('Create household clicked');
+                window.app.createHousehold();
+            });
+        } else {
+            console.error('Create household button not found');
+        }
+
+        const joinHouseholdBtn = document.getElementById('join-household-btn');
+        if (joinHouseholdBtn) {
+            console.log('Found join household button');
+            joinHouseholdBtn.addEventListener('click', () => {
+                const householdCode = document.getElementById('join-household-code')?.value;
+                console.log('Join household clicked with code:', householdCode);
+                
+                if (householdCode && householdCode.trim() !== '') {
+                    window.app.joinHousehold(householdCode.trim());
+                } else {
+                    window.app.showNotification('Please enter a household code', 'error');
+                }
+            });
+        } else {
+            console.error('Join household button not found');
+        }
+
+        // Close modal
+        const closeBtn = document.querySelector('#login-modal .close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                window.app.hideLoginModal();
+            });
+        }
+
+        // Close on outside click
+        const modal = document.getElementById('login-modal');
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target.id === 'login-modal') {
+                    window.app.hideLoginModal();
+                }
+            });
+        }
+    }, 1000); // Wait 1 second for elements to load
+}
 
 // Also initialize immediately if DOM is already loaded
 if (document.readyState !== 'loading') {

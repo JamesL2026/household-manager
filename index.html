@@ -6,9 +6,93 @@
     <title>Household Manager - Chores & Laundry Scheduler</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getDatabase, ref, set, get, push, update, remove, onValue, off } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+        import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js';
+        import { getAnalytics, logEvent } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js';
+        
+        // Your Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyAh5OOqdznrhgDCUcEcyAQx1P4UarXzkbI",
+            authDomain: "household-manager-acfcd.firebaseapp.com",
+            projectId: "household-manager-acfcd",
+            storageBucket: "household-manager-acfcd.firebasestorage.app",
+            messagingSenderId: "884072693409",
+            appId: "1:884072693409:web:4cb417f15b29ec09007ae0",
+            measurementId: "G-TF3Y6KEZY0"
+        };
+        
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
+        const storage = getStorage(app);
+        const messaging = getMessaging(app);
+        const analytics = getAnalytics(app);
+        
+        // Make Firebase available globally
+        window.firebase = { 
+            auth, database, storage, messaging, analytics,
+            signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, 
+            GoogleAuthProvider, signInWithPopup,
+            ref, set, get, push, update, remove, onValue, off,
+            uploadBytes, getDownloadURL, deleteObject,
+            getToken, onMessage,
+            logEvent
+        };
+    </script>
 </head>
 <body>
-    <div class="app-container">
+    <!-- Mandatory Authentication Screen -->
+    <div id="auth-screen" class="auth-screen">
+        <div class="auth-container">
+            <div class="auth-header">
+                <h1>🏠 Household Manager</h1>
+                <p>Please choose how you'd like to access your household</p>
+            </div>
+            
+            <div class="auth-options">
+                <div class="auth-option-card google-option">
+                    <div class="auth-icon">
+                        <i class="fab fa-google"></i>
+                    </div>
+                    <h3>Sign in with Google</h3>
+                    <p>Access your household with your Google account for full features and data persistence</p>
+                    <button id="google-auth-btn" class="auth-btn google-btn">
+                        <i class="fab fa-google"></i>
+                        Continue with Google
+                    </button>
+                </div>
+                
+                <div class="auth-divider">
+                    <span>or</span>
+                </div>
+                
+                <div class="auth-option-card guest-option">
+                    <div class="auth-icon">
+                        <i class="fas fa-user-clock"></i>
+                    </div>
+                    <h3>Continue as Guest</h3>
+                    <p>Try the app without signing in. Data will be saved locally but won't sync across devices</p>
+                    <button id="guest-auth-btn" class="auth-btn guest-btn">
+                        <i class="fas fa-user-clock"></i>
+                        Continue as Guest
+                    </button>
+                </div>
+            </div>
+            
+            <div class="auth-footer">
+                <p><small>By continuing, you agree to our terms of service</small></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container" id="app-container" style="display: none;">
         <!-- Sidebar Navigation -->
         <aside class="sidebar">
             <div class="sidebar-header">
@@ -21,6 +105,12 @@
                     <div class="profile-info">
                         <div class="profile-name" id="profile-name">Alex Chen</div>
                         <div class="profile-status">Online</div>
+                        <button class="profile-edit-btn" onclick="app.openProfileModal()" title="Edit Profile">
+                            <i class="fas fa-user-edit"></i>
+                        </button>
+                        <button class="signout-btn" onclick="app.signOut()" title="Sign Out">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1080,6 +1170,57 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" id="cancel-profile">Cancel</button>
                 <button class="btn btn-primary" id="save-profile">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal" id="login-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Welcome to Household Manager</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="welcome-section">
+                    <h4>Welcome to Household Manager</h4>
+                    <p>Sign in with your Google account to get started</p>
+                    <button id="google-signin-btn" class="google-signin-btn">
+                        <i class="fab fa-google"></i>
+                        Continue with Google
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Household Code Modal -->
+    <div id="household-code-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Join or Create Household</h3>
+            </div>
+            <div class="modal-body">
+                <div class="household-options">
+                    <div class="option-card" id="create-household-option">
+                        <h4>Create New Household</h4>
+                        <p>Start a new household and invite your roommates</p>
+                        <button class="btn btn-primary" id="create-household-btn">Create Household</button>
+                    </div>
+                    
+                    <div class="household-divider">
+                        <span>or</span>
+                    </div>
+                    
+                    <div class="option-card" id="join-household-option">
+                        <h4>Join Existing Household</h4>
+                        <p>Enter the household code to join an existing household</p>
+                        <div class="form-group">
+                            <input type="text" id="join-household-code" placeholder="Enter household code" maxlength="6">
+                        </div>
+                        <button class="btn btn-secondary" id="join-household-btn">Join Household</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
