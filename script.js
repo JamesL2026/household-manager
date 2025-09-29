@@ -277,7 +277,7 @@ class HouseholdManager {
             id: 'chore-' + Date.now(),
             name: 'Take out trash',
             frequency: 'weekly',
-            assignedTo: 'user1',
+            assignedTo: this.settings.currentUserId,
             duration: 15,
             startDate: new Date().toISOString(),
             createdAt: new Date().toISOString(),
@@ -2418,9 +2418,7 @@ class HouseholdManager {
 
     // Sample Data Initialization
     initializeSampleData() {
-        if (this.roommates.length === 0) {
-            this.initializeUSCRoommates();
-        }
+        // Don't initialize roommates - let users add their own
         if (this.inventoryItems.length === 0) {
             this.initializeSampleInventory();
         }
@@ -2438,29 +2436,14 @@ class HouseholdManager {
         }
     }
 
-    initializeUSCRoommates() {
-        const uscRoommates = [
-            { id: 'user1', name: 'Alex Chen', email: 'alex.chen@usc.edu', avatar: '👨‍💻', color: '#FF6B6B', preferences: { chores: ['dishes', 'trash'], availability: 'weekends' } },
-            { id: 'user2', name: 'Sarah Johnson', email: 'sarah.j@usc.edu', avatar: '👩‍🎓', color: '#1E90FF', preferences: { chores: ['cleaning', 'laundry'], availability: 'weekdays' } },
-            { id: 'user3', name: 'Mike Rodriguez', email: 'mike.r@usc.edu', avatar: '👨‍🍳', color: '#32CD32', preferences: { chores: ['cooking', 'groceries'], availability: 'evenings' } },
-            { id: 'user4', name: 'Emma Davis', email: 'emma.d@usc.edu', avatar: '👩‍🔬', color: '#FF8C00', preferences: { chores: ['bathroom', 'organizing'], availability: 'mornings' } },
-            { id: 'user5', name: 'David Kim', email: 'david.k@usc.edu', avatar: '👨‍💼', color: '#FFD700', preferences: { chores: ['bills', 'maintenance'], availability: 'weekends' } },
-            { id: 'user6', name: 'Lisa Wang', email: 'lisa.w@usc.edu', avatar: '👩‍🎨', color: '#8A2BE2', preferences: { chores: ['decorating', 'plants'], availability: 'flexible' } },
-            { id: 'user7', name: 'James Wilson', email: 'james.w@usc.edu', avatar: '👨‍🏫', color: '#00CED1', preferences: { chores: ['trash', 'recycling'], availability: 'evenings' } },
-            { id: 'user8', name: 'Maya Patel', email: 'maya.p@usc.edu', avatar: '👩‍⚕️', color: '#FF1493', preferences: { chores: ['cleaning', 'dishes'], availability: 'mornings' } }
-        ];
-        
-        this.roommates = uscRoommates;
-        this.saveData('roommates', this.roommates);
-    }
 
     initializeSampleInventory() {
         const sampleItems = [
-            { id: 'item1', name: 'Dish Soap', category: 'cleaning', quantity: 2, minQuantity: 1, purchasedBy: 'user1', cost: 3.99, lastUpdated: new Date().toISOString() },
-            { id: 'item2', name: 'Toilet Paper', category: 'bathroom', quantity: 8, minQuantity: 2, purchasedBy: 'user2', cost: 12.99, lastUpdated: new Date().toISOString() },
-            { id: 'item3', name: 'Laundry Detergent', category: 'cleaning', quantity: 1, minQuantity: 1, purchasedBy: 'user3', cost: 8.99, lastUpdated: new Date().toISOString() },
-            { id: 'item4', name: 'Milk', category: 'groceries', quantity: 0, minQuantity: 1, purchasedBy: 'user4', cost: 4.99, lastUpdated: new Date().toISOString() },
-            { id: 'item5', name: 'Trash Bags', category: 'cleaning', quantity: 3, minQuantity: 2, purchasedBy: 'user5', cost: 6.99, lastUpdated: new Date().toISOString() }
+            { id: 'item1', name: 'Dish Soap', category: 'cleaning', quantity: 2, minQuantity: 1, purchasedBy: this.settings.currentUserId, cost: 3.99, lastUpdated: new Date().toISOString() },
+            { id: 'item2', name: 'Toilet Paper', category: 'bathroom', quantity: 8, minQuantity: 2, purchasedBy: this.settings.currentUserId, cost: 12.99, lastUpdated: new Date().toISOString() },
+            { id: 'item3', name: 'Laundry Detergent', category: 'cleaning', quantity: 1, minQuantity: 1, purchasedBy: this.settings.currentUserId, cost: 8.99, lastUpdated: new Date().toISOString() },
+            { id: 'item4', name: 'Milk', category: 'groceries', quantity: 0, minQuantity: 1, purchasedBy: this.settings.currentUserId, cost: 4.99, lastUpdated: new Date().toISOString() },
+            { id: 'item5', name: 'Trash Bags', category: 'cleaning', quantity: 3, minQuantity: 2, purchasedBy: this.settings.currentUserId, cost: 6.99, lastUpdated: new Date().toISOString() }
         ];
         
         this.inventoryItems = sampleItems;
@@ -2468,101 +2451,20 @@ class HouseholdManager {
     }
 
     initializeSampleBills() {
-        const sampleBills = [
-            {
-                id: 'bill1',
-                description: 'Rent - January 2024',
-                amount: 3200.00,
-                paidBy: 'user1',
-                splitType: 'equal',
-                splits: [
-                    { userId: 'user1', amount: 400.00, paid: true },
-                    { userId: 'user2', amount: 400.00, paid: true },
-                    { userId: 'user3', amount: 400.00, paid: false },
-                    { userId: 'user4', amount: 400.00, paid: true },
-                    { userId: 'user5', amount: 400.00, paid: false },
-                    { userId: 'user6', amount: 400.00, paid: true },
-                    { userId: 'user7', amount: 400.00, paid: false },
-                    { userId: 'user8', amount: 400.00, paid: true }
-                ],
-                dueDate: '2024-01-01',
-                createdAt: new Date().toISOString()
-            },
-            {
-                id: 'bill2',
-                description: 'Electricity Bill',
-                amount: 120.00,
-                paidBy: 'user2',
-                splitType: 'equal',
-                splits: [
-                    { userId: 'user1', amount: 15.00, paid: true },
-                    { userId: 'user2', amount: 15.00, paid: true },
-                    { userId: 'user3', amount: 15.00, paid: true },
-                    { userId: 'user4', amount: 15.00, paid: true },
-                    { userId: 'user5', amount: 15.00, paid: true },
-                    { userId: 'user6', amount: 15.00, paid: true },
-                    { userId: 'user7', amount: 15.00, paid: true },
-                    { userId: 'user8', amount: 15.00, paid: true }
-                ],
-                dueDate: '2024-01-15',
-                createdAt: new Date().toISOString()
-            }
-        ];
-        
-        this.bills = sampleBills;
+        // Don't initialize sample bills - let users create their own
+        this.bills = [];
         this.saveData('bills', this.bills);
     }
 
     initializeSampleEvents() {
-        const sampleEvents = [
-            {
-                id: 'event1',
-                title: 'House Meeting',
-                description: 'Weekly house meeting to discuss chores and upcoming events',
-                date: '2024-01-20',
-                time: '19:00',
-                location: 'Living Room',
-                creator: 'user1',
-                attendees: ['user1', 'user2', 'user3', 'user4', 'user5', 'user6', 'user7', 'user8'],
-                createdAt: new Date().toISOString()
-            },
-            {
-                id: 'event2',
-                title: 'Movie Night',
-                description: 'Watch the latest Marvel movie together',
-                date: '2024-01-25',
-                time: '20:00',
-                location: 'Living Room',
-                creator: 'user3',
-                attendees: ['user1', 'user2', 'user3', 'user6', 'user8'],
-                createdAt: new Date().toISOString()
-            }
-        ];
-        
-        this.events = sampleEvents;
+        // Don't initialize sample events - let users create their own
+        this.events = [];
         this.saveData('events', this.events);
     }
 
     initializeSamplePolls() {
-        const samplePolls = [
-            {
-                id: 'poll1',
-                question: 'What should we order for dinner tonight?',
-                description: 'Vote for your preferred dinner option',
-                options: [
-                    { text: 'Pizza', votes: 3, voters: ['user1', 'user3', 'user5'] },
-                    { text: 'Chinese Food', votes: 2, voters: ['user2', 'user4'] },
-                    { text: 'Mexican Food', votes: 1, voters: ['user6'] },
-                    { text: 'Thai Food', votes: 2, voters: ['user7', 'user8'] }
-                ],
-                creator: 'user1',
-                expiryDate: '2024-01-20',
-                status: 'active',
-                createdAt: new Date().toISOString()
-            }
-        ];
-        
-        this.polls = samplePolls;
+        // Don't initialize sample polls - let users create their own
+        this.polls = [];
         this.saveData('polls', this.polls);
     }
 
@@ -3883,7 +3785,7 @@ class HouseholdManager {
         this.userProfile.color = color;
         
         // Handle photo upload with Firebase Storage
-        if (photoInput.files[0]) {
+            if (photoInput.files[0]) {
             try {
                 const file = photoInput.files[0];
                 const fileName = `profile-${this.currentUser?.uid || 'default'}-${Date.now()}.${file.name.split('.').pop()}`;
@@ -3921,10 +3823,10 @@ class HouseholdManager {
                 };
                 reader.readAsDataURL(photoInput.files[0]);
             }
-        } else {
+            } else {
             // Save user profile data and update display
             await this.saveData('userProfile', this.userProfile);
-            this.updateProfileDisplay();
+                this.updateProfileDisplay();
         }
         
         // Also update the current user's name and color in roommates list
@@ -4105,8 +4007,8 @@ class HouseholdManager {
             
             // Clear any existing photo selection
             document.getElementById('photo-input').value = '';
-            
-            this.openModal('profile-photo-modal');
+        
+        this.openModal('profile-photo-modal');
         } else {
             // For other roommates, find them in the roommates list
         const roommate = this.roommates.find(r => r.id === roommateId);
