@@ -857,8 +857,8 @@ class HouseholdManager {
 
     generateRandomColor() {
         const colors = [
-            '#FF6B6B', '#FF8C00', '#FFD700', '#32CD32', '#00CED1',
-            '#1E90FF', '#8A2BE2', '#FF1493', '#FF4500', '#00FF7F'
+            '#FFB6C1', '#DDA0DD', '#98FB98', '#FFD700', '#87CEEB',
+            '#000080', '#F5F5DC', '#FF7F50', '#FFA07A', '#008080'
         ];
         
         // Get used colors
@@ -1541,8 +1541,8 @@ class HouseholdManager {
 
     generateRandomColor() {
         const colors = [
-            '#FF6B6B', '#FF8C00', '#FFD700', '#32CD32', '#00CED1',
-            '#1E90FF', '#8A2BE2', '#FF1493', '#FF4500', '#00FF7F'
+            '#FFB6C1', '#DDA0DD', '#98FB98', '#FFD700', '#87CEEB',
+            '#000080', '#F5F5DC', '#FF7F50', '#FFA07A', '#008080'
         ];
         return colors[Math.floor(Math.random() * colors.length)];
     }
@@ -4052,16 +4052,16 @@ class HouseholdManager {
                     <div class="form-group">
                         <label for="roommate-edit-color">Color</label>
                         <select id="roommate-edit-color">
-                            <option value="#FF6B6B" ${roommate.color === '#FF6B6B' ? 'selected' : ''} style="background-color: #FF6B6B; color: white;">Red</option>
-                            <option value="#FF8C00" ${roommate.color === '#FF8C00' ? 'selected' : ''} style="background-color: #FF8C00; color: white;">Orange</option>
-                            <option value="#FFD700" ${roommate.color === '#FFD700' ? 'selected' : ''} style="background-color: #FFD700; color: black;">Yellow</option>
-                            <option value="#32CD32" ${roommate.color === '#32CD32' ? 'selected' : ''} style="background-color: #32CD32; color: white;">Green</option>
-                            <option value="#00CED1" ${roommate.color === '#00CED1' ? 'selected' : ''} style="background-color: #00CED1; color: white;">Cyan</option>
-                            <option value="#1E90FF" ${roommate.color === '#1E90FF' ? 'selected' : ''} style="background-color: #1E90FF; color: white;">Blue</option>
-                            <option value="#8A2BE2" ${roommate.color === '#8A2BE2' ? 'selected' : ''} style="background-color: #8A2BE2; color: white;">Purple</option>
-                            <option value="#FF1493" ${roommate.color === '#FF1493' ? 'selected' : ''} style="background-color: #FF1493; color: white;">Pink</option>
-                            <option value="#FF4500" ${roommate.color === '#FF4500' ? 'selected' : ''} style="background-color: #FF4500; color: white;">Red Orange</option>
-                            <option value="#00FF7F" ${roommate.color === '#00FF7F' ? 'selected' : ''} style="background-color: #00FF7F; color: black;">Spring Green</option>
+                            <option value="#FFB6C1" ${roommate.color === '#FFB6C1' ? 'selected' : ''} style="background-color: #FFB6C1; color: black;">Light Pink</option>
+                            <option value="#DDA0DD" ${roommate.color === '#DDA0DD' ? 'selected' : ''} style="background-color: #DDA0DD; color: black;">Lavender</option>
+                            <option value="#98FB98" ${roommate.color === '#98FB98' ? 'selected' : ''} style="background-color: #98FB98; color: black;">Mint Green</option>
+                            <option value="#FFD700" ${roommate.color === '#FFD700' ? 'selected' : ''} style="background-color: #FFD700; color: black;">Gold</option>
+                            <option value="#87CEEB" ${roommate.color === '#87CEEB' ? 'selected' : ''} style="background-color: #87CEEB; color: black;">Sky Blue</option>
+                            <option value="#000080" ${roommate.color === '#000080' ? 'selected' : ''} style="background-color: #000080; color: white;">Navy Blue</option>
+                            <option value="#F5F5DC" ${roommate.color === '#F5F5DC' ? 'selected' : ''} style="background-color: #F5F5DC; color: black;">Cream</option>
+                            <option value="#FF7F50" ${roommate.color === '#FF7F50' ? 'selected' : ''} style="background-color: #FF7F50; color: white;">Coral</option>
+                            <option value="#FFA07A" ${roommate.color === '#FFA07A' ? 'selected' : ''} style="background-color: #FFA07A; color: white;">Peach</option>
+                            <option value="#008080" ${roommate.color === '#008080' ? 'selected' : ''} style="background-color: #008080; color: white;">Teal</option>
                         </select>
                     </div>
                 </div>
