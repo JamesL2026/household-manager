@@ -4820,10 +4820,18 @@ class HouseholdManager {
     async handleGoogleAuth() {
         try {
             console.log('Starting Google authentication');
+            
+            // Check if Firebase is available
+            if (!this.firebase || !this.firebase.auth) {
+                console.error('Firebase authentication not available');
+                this.showNotification('Firebase authentication not configured. Please use Guest mode.', 'error');
+                return;
+            }
+            
             await this.signInWithGoogle();
         } catch (error) {
             console.error('Google authentication failed:', error);
-            this.showNotification('Google sign-in failed. Please try again.', 'error');
+            this.showNotification('Google sign-in failed. Please use Guest mode instead.', 'error');
         }
     }
 
@@ -4921,6 +4929,12 @@ class HouseholdManager {
     async signInWithGoogle() {
         try {
             console.log('Attempting Google sign in...');
+            
+            // Check if Firebase is properly configured
+            if (!this.firebase || !this.firebase.auth || !this.firebase.GoogleAuthProvider) {
+                throw new Error('Firebase authentication not properly configured');
+            }
+            
             const provider = new this.firebase.GoogleAuthProvider();
             const result = await this.firebase.signInWithPopup(this.firebase.auth, provider);
             const user = result.user;
@@ -5175,9 +5189,44 @@ class HouseholdManager {
 
     async signOut() {
         try {
-            await this.firebase.signOut(this.firebase.auth);
+            console.log('Signing out user');
+            
+            // Handle guest users
+            if (this.isGuest) {
+                console.log('Signing out guest user');
+                this.currentUser = null;
+                this.isOnline = false;
+                this.householdId = null;
+                this.isGuest = false;
+                
+                // Clear all data
+                this.clearAllData();
+                
+                // Show auth screen
+                this.showAuthScreen();
+                
+                this.showNotification('Guest signed out successfully!', 'success');
+                return;
+            }
+            
+            // Handle Firebase authenticated users
+            if (this.firebase && this.firebase.auth) {
+                await this.firebase.signOut(this.firebase.auth);
+            }
+            
+            this.currentUser = null;
+            this.isOnline = false;
+            this.householdId = null;
+            
+            // Clear all data
+            this.clearAllData();
+            
+            // Show auth screen
+            this.showAuthScreen();
+            
             this.showNotification('Signed out successfully!', 'success');
         } catch (error) {
+            console.error('Error signing out:', error);
             this.showNotification('Sign out failed: ' + error.message, 'error');
         }
     }
