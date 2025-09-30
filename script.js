@@ -5082,10 +5082,13 @@ class HouseholdManager {
                     const email = document.getElementById('signup-email').value;
                     const password = document.getElementById('signup-password').value;
 
+                    console.log('Create account form submitted:', { name, email, password });
+
                     try {
                         await this.auth.createAccount(email, password, name);
                     } catch (error) {
                         console.error('Sign up error:', error);
+                        this.showNotification('Account creation failed: ' + error.message, 'error');
                     }
                 });
             }
@@ -5137,18 +5140,22 @@ class HouseholdManager {
         const authTitle = document.getElementById('auth-title');
         const toggleBtn = document.getElementById('toggle-auth-btn');
         
+        console.log('Toggling auth form. Current signin display:', signinForm.style.display);
+        
         if (signinForm.style.display === 'none') {
             // Show sign in form
             signinForm.style.display = 'flex';
             signupForm.style.display = 'none';
             authTitle.textContent = 'Sign In';
             toggleBtn.textContent = "Don't have an account? Create one";
+            console.log('Switched to sign in form');
         } else {
             // Show create account form
             signinForm.style.display = 'none';
             signupForm.style.display = 'flex';
             authTitle.textContent = 'Create Account';
             toggleBtn.textContent = 'Already have an account? Sign in';
+            console.log('Switched to create account form');
         }
     }
 
@@ -5997,6 +6004,7 @@ class EmailAuth {
     // Create account with email and password
     async createAccount(email, password, name) {
         try {
+            console.log('Creating account with:', { email, name });
             const userCredential = await this.firebase.createUserWithEmailAndPassword(this.firebase.auth, email, password);
             const user = userCredential.user;
             console.log('Account created with email:', user.email);
