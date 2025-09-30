@@ -5127,6 +5127,16 @@ class HouseholdManager {
         }
     }
 
+    generateHouseholdCode() {
+        // Generate a 6-character alphanumeric code
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let result = '';
+        for (let i = 0; i < 6; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    }
+
     showHouseholdCodeSuccess(householdCode) {
         // Create success modal if it doesn't exist
         let successModal = document.getElementById('household-success-modal');
@@ -5630,7 +5640,12 @@ function setupLoginModal() {
             console.log('Found create household button');
             createHouseholdBtn.addEventListener('click', () => {
                 console.log('Create household clicked');
-                window.app.createHousehold();
+                if (window.app && typeof window.app.createHousehold === 'function') {
+                    window.app.createHousehold();
+                } else {
+                    console.error('createHousehold function not found on app object');
+                    console.log('Available methods:', Object.getOwnPropertyNames(window.app));
+                }
             });
         } else {
             console.error('Create household button not found');
@@ -5644,9 +5659,18 @@ function setupLoginModal() {
                 console.log('Join household clicked with code:', householdCode);
                 
                 if (householdCode && householdCode.trim() !== '') {
-                    window.app.joinHousehold(householdCode.trim());
+                    if (window.app && typeof window.app.joinHousehold === 'function') {
+                        window.app.joinHousehold(householdCode.trim());
+                    } else {
+                        console.error('joinHousehold function not found on app object');
+                        console.log('Available methods:', Object.getOwnPropertyNames(window.app));
+                    }
                 } else {
-                    window.app.showNotification('Please enter a household code', 'error');
+                    if (window.app && typeof window.app.showNotification === 'function') {
+                        window.app.showNotification('Please enter a household code', 'error');
+                    } else {
+                        alert('Please enter a household code');
+                    }
                 }
             });
         } else {
