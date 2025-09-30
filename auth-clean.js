@@ -12,7 +12,16 @@ class CleanAuth {
         try {
             console.log('Initializing clean authentication...');
             
-            // Set up auth state listener
+            // Check for redirect result FIRST (before setting up auth state listener)
+            const result = await this.firebase.getRedirectResult(this.firebase.auth);
+            if (result && result.user) {
+                console.log('Found redirect result:', result.user);
+                // Process redirect result immediately
+                await this.handleUserSignIn(result.user);
+                return; // Exit early to prevent auth state listener from interfering
+            }
+            
+            // Set up auth state listener (only if no redirect result)
             this.firebase.onAuthStateChanged(this.firebase.auth, (user) => {
                 console.log('Auth state changed:', user ? 'signed in' : 'signed out');
                 
@@ -23,12 +32,8 @@ class CleanAuth {
                 }
             });
             
-            // Check for redirect result
-            const result = await this.firebase.getRedirectResult(this.firebase.auth);
-            if (result && result.user) {
-                console.log('Found redirect result:', result.user);
-                this.handleUserSignIn(result.user);
-            } else if (this.firebase.auth.currentUser) {
+            // Check if user is already signed in
+            if (this.firebase.auth.currentUser) {
                 console.log('User already signed in');
                 this.handleUserSignIn(this.firebase.auth.currentUser);
             } else {
@@ -45,7 +50,14 @@ class CleanAuth {
     async handleUserSignIn(user) {
         try {
             console.log('Handling user sign in:', user.email);
+            console.log('User details:', {
+                uid: user.uid,
+                email: user.email,
+                displayName: user.displayName,
+                photoURL: user.photoURL
+            });
             
+            // Set user state immediately
             this.currentUser = user;
             this.isOnline = true;
             this.app.currentUser = user;
@@ -53,10 +65,13 @@ class CleanAuth {
             
             // Check if user exists in database
             const userDoc = await this.firebase.getDoc(this.firebase.doc(this.firebase.db, 'users', user.uid));
+            console.log('User document exists:', userDoc.exists());
             
             if (userDoc.exists()) {
                 // Existing user
                 const userData = userDoc.data();
+                console.log('Existing user data:', userData);
+                
                 this.app.householdId = userData.householdId;
                 this.app.userProfile = userData.profile || this.app.userProfile;
                 
@@ -69,10 +84,13 @@ class CleanAuth {
                 this.app.showNotification('Welcome back!', 'success');
             } else {
                 // New user
+                console.log('New user - setting up profile');
                 this.app.userProfile.name = user.displayName || user.email.split('@')[0];
                 this.app.userProfile.email = user.email;
                 this.app.userProfile.avatar = user.photoURL;
                 this.app.userProfile.color = this.app.generateRandomColor();
+                
+                console.log('Updated user profile:', this.app.userProfile);
                 
                 this.app.saveData('userProfile', this.app.userProfile);
                 this.app.showHouseholdCodeModal();
@@ -92,6 +110,11 @@ class CleanAuth {
         this.app.isOnline = false;
         this.app.householdId = null;
         this.app.showAuthScreen();
+    }
+
+    // Check if we're processing a redirect result
+    isProcessingRedirect() {
+        return this.firebase.auth.currentUser && !this.currentUser;
     }
 
     // Google sign in
