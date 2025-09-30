@@ -5630,7 +5630,9 @@ class HouseholdManager {
 
 // Initialize the application when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    window.app = new HouseholdManager();
+    if (!window.app) {
+        window.app = new HouseholdManager();
+    }
     
     // Initialize default roommates if none exist
     if (window.app.roommates.length === 0) {
@@ -5803,8 +5805,8 @@ function setupLoginModal() {
     }, 1000); // Wait 1 second for elements to load
 }
 
-// Also initialize immediately if DOM is already loaded
-if (document.readyState !== 'loading') {
+// Initialize app immediately if DOM is already loaded (but only if not already initialized)
+if (document.readyState !== 'loading' && !window.app) {
     window.app = new HouseholdManager();
     
     // Initialize default roommates if none exist
