@@ -1310,13 +1310,6 @@ class HouseholdManager {
         element.onclick = () => this.showChoreDetails(chore.id);
         return element;
     }
-    generateRandomColor() {
-        const colors = [
-            '#FF6B6B', '#FF8C00', '#FFD700', '#32CD32', '#00CED1',
-            '#1E90FF', '#8A2BE2', '#FF1493', '#FF4500', '#00FF7F'
-        ];
-        return colors[Math.floor(Math.random() * colors.length)];
-    }
     showChoreDetails(choreId) {
         const chore = this.chores.find(c => c.id === choreId);
         if (!chore) return;
@@ -3322,7 +3315,7 @@ class HouseholdManager {
         } else {
             profileImg.style.display = 'none';
             avatarPlaceholder.style.display = 'block';
-            avatarPlaceholder.textContent = this.userProfile.avatar || '??';
+            avatarPlaceholder.textContent = this.userProfile.name ? this.userProfile.name.charAt(0).toUpperCase() : '??';
         }
         // Update profile container with user's color
         if (profileContainer) {
@@ -4079,12 +4072,15 @@ class HouseholdManager {
     handleGuestAuth() {
         console.log('User chose guest mode');
         this.isGuest = true;
+        const guestId = 'guest_' + Date.now();
         this.currentUser = {
-            uid: 'guest_' + Date.now(),
+            uid: guestId,
             displayName: 'Guest User',
             email: 'guest@example.com',
             photoURL: null
         };
+        // Update current user ID in settings
+        this.settings.currentUserId = guestId;
         // Set up guest profile
         this.userProfile = {
             name: 'Guest User',
@@ -4092,8 +4088,9 @@ class HouseholdManager {
             avatar: null,
             color: this.generateRandomColor()
         };
-        // Save guest profile
+        // Save guest profile and settings
         this.saveData('userProfile', this.userProfile);
+        this.saveData('settings', this.settings);
         // Hide auth screen and show app
         this.hideAuthScreen();
         // Update profile display
