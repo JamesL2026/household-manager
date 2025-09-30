@@ -130,14 +130,11 @@ class HouseholdManager {
         // Initialize Firebase listeners
         this.initFirebase();
         
-        // Handle redirect results FIRST (before auth state listener)
-        this.handleRedirectResult();
-        
-        // Check for redirect results on page load
-        this.checkForRedirectResult();
-        
-        // Set up Firebase auth state listener (after redirect handling)
+        // Set up Firebase auth state listener FIRST
         this.setupAuthStateListener();
+        
+        // Then check for redirect results
+        this.checkForRedirectResult();
         
         // Set up mandatory authentication
         this.setupMandatoryAuth();
@@ -4849,49 +4846,24 @@ class HouseholdManager {
         try {
             console.log('Checking for redirect result...');
             
-            // Check if we have a redirect result in the URL or if user is already authenticated
+            // Wait a moment for Firebase to initialize
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Check if we have a redirect result
             const result = await this.firebase.getRedirectResult(this.firebase.auth);
             console.log('Redirect result:', result);
             
             if (result && result.user) {
-                console.log('Found redirect result on page load:', result.user);
-                
-                // Set current user
-                this.currentUser = result.user;
-                this.isOnline = true;
-                
-                // Process the authentication
+                console.log('Found redirect result, processing user:', result.user);
+                // Process the user immediately
                 await this.processGoogleSignIn(result.user);
-                return; // Exit early to prevent duplicate processing
+                return;
             }
             
-            // Check if user is already signed in (from previous session)
+            // If no redirect result, check if user is already signed in
             if (this.firebase.auth.currentUser) {
-                console.log('User already signed in:', this.firebase.auth.currentUser);
-                this.currentUser = this.firebase.auth.currentUser;
-                this.isOnline = true;
-                
-                // Check if user has household data
-                const userDoc = await this.firebase.getDoc(this.firebase.doc(this.firebase.db, 'users', this.currentUser.uid));
-                if (userDoc.exists()) {
-                    const userData = userDoc.data();
-                    this.householdId = userData.householdId;
-                    this.userProfile = userData.profile || this.userProfile;
-                    
-                    // Load household data and show app
-                    await this.loadHouseholdData();
-                    this.hideAuthScreen();
-                    this.initializeApp();
-                } else {
-                    // User exists but no household data - show household code modal
-                    this.userProfile.name = this.currentUser.displayName || this.currentUser.email.split('@')[0];
-                    this.userProfile.email = this.currentUser.email;
-                    this.userProfile.avatar = this.currentUser.photoURL;
-                    this.userProfile.color = this.generateRandomColor();
-                    
-                    this.saveData('userProfile', this.userProfile);
-                    this.showHouseholdCodeModal();
-                }
+                console.log('User already signed in from previous session');
+                // The auth state listener will handle this
             } else {
                 console.log('No user signed in, showing auth screen');
                 this.showAuthScreen();
@@ -4899,6 +4871,27 @@ class HouseholdManager {
         } catch (error) {
             console.error('Error checking for redirect result:', error);
             this.showAuthScreen();
+        }
+    }
+
+    // Sign out method
+    async signOut() {
+        try {
+            await this.firebase.signOut(this.firebase.auth);
+            this.currentUser = null;
+            this.isOnline = false;
+            this.householdId = null;
+            
+            // Clear local data
+            this.clearAllData();
+            
+            // Show auth screen
+            this.showAuthScreen();
+            
+            this.showNotification('Signed out successfully', 'success');
+        } catch (error) {
+            console.error('Error signing out:', error);
+            this.showNotification('Error signing out: ' + error.message, 'error');
         }
     }
 
@@ -4912,6 +4905,10 @@ class HouseholdManager {
                 displayName: user.displayName,
                 photoURL: user.photoURL
             });
+            
+            // Set current user immediately
+            this.currentUser = user;
+            this.isOnline = true;
             
             // Check if user already exists
             const userDoc = await this.firebase.getDoc(this.firebase.doc(this.firebase.db, 'users', user.uid));
@@ -4963,13 +4960,11 @@ class HouseholdManager {
             console.log('Auth state changed:', user ? 'user signed in' : 'user signed out');
             
             if (user) {
-                this.currentUser = user;
-                this.isOnline = true;
-                
                 // Only process if we haven't already processed this user
-                // This prevents duplicate processing when redirect result is handled
-                if (!this.userProfile.name || this.userProfile.name === 'Alex Chen' || this.userProfile.name === 'You') {
+                if (!this.currentUser || this.currentUser.uid !== user.uid) {
                     console.log('Processing auth state change for user:', user);
+                    this.currentUser = user;
+                    this.isOnline = true;
                     await this.processGoogleSignIn(user);
                 } else {
                     console.log('User already processed, skipping duplicate processing');
@@ -5544,49 +5539,6 @@ class HouseholdManager {
         }
     }
 
-    async signOut() {
-        try {
-            console.log('Signing out user');
-            
-            // Handle guest users
-            if (this.isGuest) {
-                console.log('Signing out guest user');
-                this.currentUser = null;
-                this.isOnline = false;
-                this.householdId = null;
-                this.isGuest = false;
-                
-                // Clear all data
-                this.clearAllData();
-                
-                // Show auth screen
-                this.showAuthScreen();
-                
-                this.showNotification('Guest signed out successfully!', 'success');
-                return;
-            }
-            
-            // Handle Firebase authenticated users
-            if (this.firebase && this.firebase.auth) {
-                await this.firebase.signOut(this.firebase.auth);
-            }
-            
-            this.currentUser = null;
-            this.isOnline = false;
-            this.householdId = null;
-            
-            // Clear all data
-            this.clearAllData();
-            
-            // Show auth screen
-            this.showAuthScreen();
-            
-            this.showNotification('Signed out successfully!', 'success');
-        } catch (error) {
-            console.error('Error signing out:', error);
-            this.showNotification('Sign out failed: ' + error.message, 'error');
-        }
-    }
 
     // Maintenance Contact Settings Functions
     openMaintenanceContactModal() {
