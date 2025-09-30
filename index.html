@@ -11,7 +11,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getDatabase, ref, set, get, push, update, remove, onValue, off } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
         import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
         import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js';
         import { getAnalytics, logEvent } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js';
@@ -30,17 +30,18 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const database = getDatabase(app);
+        const db = getFirestore(app);
         const storage = getStorage(app);
         const messaging = getMessaging(app);
         const analytics = getAnalytics(app);
         
         // Make Firebase available globally
         window.firebase = { 
-            auth, database, storage, messaging, analytics,
+            auth, db, storage, messaging, analytics,
             signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, 
             GoogleAuthProvider, signInWithPopup,
-            ref, set, get, push, update, remove, onValue, off,
+            collection, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, onSnapshot,
+            query, where, orderBy, limit,
             uploadBytes, getDownloadURL, deleteObject,
             getToken, onMessage,
             logEvent

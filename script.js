@@ -1,51 +1,49 @@
-// Firebase Realtime Database Manager
-class RealtimeDatabaseManager {
+// Firebase Firestore Database Manager
+class FirestoreManager {
     constructor(firebase) {
         this.firebase = firebase;
         this.listeners = {};
     }
 
-    async saveToRealtimeDatabase(path, data) {
+    async saveToFirestore(collectionName, docId, data) {
         if (!this.householdId || !this.firebase) return;
 
         try {
-            const fullPath = `households/${this.householdId}/${path}`;
-            const dataRef = this.firebase.ref(this.firebase.database, fullPath);
+            const docRef = this.firebase.doc(this.firebase.db, 'households', this.householdId, collectionName, docId);
             
             // Add timestamp and user info
             const dataWithMeta = {
                 ...data,
-                updatedAt: new Date().toISOString(),
+                updatedAt: new Date(),
                 updatedBy: this.currentUser.uid
             };
             
-            await this.firebase.set(dataRef, dataWithMeta);
-            console.log('Successfully saved to Realtime Database:', fullPath);
+            await this.firebase.setDoc(docRef, dataWithMeta);
+            console.log('Successfully saved to Firestore:', collectionName, docId);
         } catch (error) {
-            console.error('Error saving to Firebase Realtime Database:', error);
+            console.error('Error saving to Firestore:', error);
         }
     }
 
-    async deleteFromRealtimeDatabase(path) {
+    async deleteFromFirestore(collectionName, docId) {
         if (!this.householdId) return;
 
         try {
-            const fullPath = `households/${this.householdId}/${path}`;
-            const dataRef = this.firebase.ref(this.firebase.database, fullPath);
-            await this.firebase.remove(dataRef);
-            console.log('Successfully deleted from Realtime Database:', fullPath);
+            const docRef = this.firebase.doc(this.firebase.db, 'households', this.householdId, collectionName, docId);
+            await this.firebase.deleteDoc(docRef);
+            console.log('Successfully deleted from Firestore:', collectionName, docId);
         } catch (error) {
-            console.error('Error deleting from Firebase Realtime Database:', error);
+            console.error('Error deleting from Firestore:', error);
         }
     }
 
-    setupRealtimeListeners(householdId, app) {
+    setupFirestoreListeners(householdId, app) {
         if (!householdId) {
-            console.log('No household ID, skipping real-time listeners');
+            console.log('No household ID, skipping Firestore listeners');
             return;
         }
 
-        console.log('Setting up real-time listeners for household:', householdId);
+        console.log('Setting up Firestore listeners for household:', householdId);
 
         try {
             // Set up real-time listeners for each data type
@@ -62,25 +60,24 @@ class RealtimeDatabaseManager {
             ];
             
             for (const dataType of dataTypes) {
-                const dataRef = this.firebase.ref(this.firebase.database, `households/${householdId}/${dataType.key}`);
+                const collectionRef = this.firebase.collection(this.firebase.db, 'households', householdId, dataType.key);
                 
                 // Remove existing listener if it exists
                 if (this.listeners[dataType.key]) {
-                    this.firebase.off(this.listeners[dataType.key]);
+                    this.listeners[dataType.key]();
                 }
                 
                 // Set up new listener
-                this.listeners[dataType.key] = this.firebase.onValue(dataRef, (snapshot) => {
-                    const data = snapshot.val();
-                    console.log(`Real-time update for ${dataType.key}:`, data);
+                this.listeners[dataType.key] = this.firebase.onSnapshot(collectionRef, (snapshot) => {
+                    const dataArray = [];
+                    snapshot.forEach((doc) => {
+                        dataArray.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
                     
-                    // Convert to array if it's an object
-                    let dataArray = data;
-                    if (data && typeof data === 'object' && !Array.isArray(data)) {
-                        dataArray = Object.values(data);
-                    } else if (!data) {
-                        dataArray = [];
-                    }
+                    console.log(`Firestore update for ${dataType.key}:`, dataArray);
                     
                     // Update local data
                     app[dataType.key] = dataArray;
@@ -95,15 +92,15 @@ class RealtimeDatabaseManager {
                 });
             }
 
-            console.log('All real-time listeners set up successfully');
+            console.log('All Firestore listeners set up successfully');
         } catch (error) {
-            console.error('Error setting up real-time listeners:', error);
+            console.error('Error setting up Firestore listeners:', error);
         }
     }
 
     cleanupListeners() {
         for (const [key, listener] of Object.entries(this.listeners)) {
-            this.firebase.off(listener);
+            listener(); // Firestore listeners return unsubscribe functions
             console.log(`Cleaned up listener for ${key}`);
         }
         this.listeners = {};
@@ -124,6 +121,9 @@ class HouseholdManager {
         
         console.log('Firebase available:', !!this.firebase);
         
+        // Initialize Firestore manager
+        this.firestoreManager = new FirestoreManager(this.firebase);
+        
         // Clear all existing data for fresh start
         this.clearAllData();
         
@@ -135,9 +135,7 @@ class HouseholdManager {
         
         // Initialize maintenance contact settings
         this.updateMaintenanceButton();
-        
-        // Clear existing roommates and start fresh
-        this.clearAllRoommates();
+        this.roommates = this.loadData('roommates') || [];
         this.chores = this.loadData('chores') || [];
         this.personalTasks = this.loadData('personalTasks') || [];
         this.laundryBookings = this.loadData('laundryBookings') || [];
@@ -168,8 +166,8 @@ class HouseholdManager {
         
         // User profile data (independent of roommates)
         this.userProfile = this.loadData('userProfile') || {
-            name: 'You',
-            email: '',
+            name: 'Alex Chen',
+            email: 'alex.chen@usc.edu',
             avatar: null,
             color: this.generateRandomColor()
         };
@@ -2420,10 +2418,8 @@ class HouseholdManager {
 
     // Sample Data Initialization
     initializeSampleData() {
-        // Start with empty roommates for fresh slate
         if (this.roommates.length === 0) {
-            this.roommates = [];
-            this.saveData('roommates', this.roommates);
+            this.initializeUSCRoommates();
         }
         if (this.inventoryItems.length === 0) {
             this.initializeSampleInventory();
@@ -2443,17 +2439,19 @@ class HouseholdManager {
     }
 
     initializeUSCRoommates() {
-        // Start with empty roommates array for fresh slate
-        this.roommates = [];
+        const uscRoommates = [
+            { id: 'user1', name: 'Alex Chen', email: 'alex.chen@usc.edu', avatar: '👨‍💻', color: '#FF6B6B', preferences: { chores: ['dishes', 'trash'], availability: 'weekends' } },
+            { id: 'user2', name: 'Sarah Johnson', email: 'sarah.j@usc.edu', avatar: '👩‍🎓', color: '#1E90FF', preferences: { chores: ['cleaning', 'laundry'], availability: 'weekdays' } },
+            { id: 'user3', name: 'Mike Rodriguez', email: 'mike.r@usc.edu', avatar: '👨‍🍳', color: '#32CD32', preferences: { chores: ['cooking', 'groceries'], availability: 'evenings' } },
+            { id: 'user4', name: 'Emma Davis', email: 'emma.d@usc.edu', avatar: '👩‍🔬', color: '#FF8C00', preferences: { chores: ['bathroom', 'organizing'], availability: 'mornings' } },
+            { id: 'user5', name: 'David Kim', email: 'david.k@usc.edu', avatar: '👨‍💼', color: '#FFD700', preferences: { chores: ['bills', 'maintenance'], availability: 'weekends' } },
+            { id: 'user6', name: 'Lisa Wang', email: 'lisa.w@usc.edu', avatar: '👩‍🎨', color: '#8A2BE2', preferences: { chores: ['decorating', 'plants'], availability: 'flexible' } },
+            { id: 'user7', name: 'James Wilson', email: 'james.w@usc.edu', avatar: '👨‍🏫', color: '#00CED1', preferences: { chores: ['trash', 'recycling'], availability: 'evenings' } },
+            { id: 'user8', name: 'Maya Patel', email: 'maya.p@usc.edu', avatar: '👩‍⚕️', color: '#FF1493', preferences: { chores: ['cleaning', 'dishes'], availability: 'mornings' } }
+        ];
+        
+        this.roommates = uscRoommates;
         this.saveData('roommates', this.roommates);
-    }
-
-    // Clear all roommate data and start fresh
-    clearAllRoommates() {
-        this.roommates = [];
-        this.saveData('roommates', this.roommates);
-        this.renderRoommates();
-        console.log('All roommates cleared - starting fresh!');
     }
 
     initializeSampleInventory() {
