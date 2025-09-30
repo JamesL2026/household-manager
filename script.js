@@ -130,14 +130,14 @@ class HouseholdManager {
         // Initialize Firebase listeners
         this.initFirebase();
         
-        // Set up Firebase auth state listener
-        this.setupAuthStateListener();
-        
-        // Handle redirect results (for popup blocker fallback)
+        // Handle redirect results FIRST (before auth state listener)
         this.handleRedirectResult();
         
-        // Also check for redirect results on page load
+        // Check for redirect results on page load
         this.checkForRedirectResult();
+        
+        // Set up Firebase auth state listener (after redirect handling)
+        this.setupAuthStateListener();
         
         // Set up mandatory authentication
         this.setupMandatoryAuth();
@@ -4847,8 +4847,12 @@ class HouseholdManager {
     // Check for redirect results on page load (for when user returns from redirect)
     async checkForRedirectResult() {
         try {
+            console.log('Checking for redirect result...');
+            
             // Check if we have a redirect result in the URL or if user is already authenticated
             const result = await this.firebase.getRedirectResult(this.firebase.auth);
+            console.log('Redirect result:', result);
+            
             if (result && result.user) {
                 console.log('Found redirect result on page load:', result.user);
                 
@@ -4858,8 +4862,11 @@ class HouseholdManager {
                 
                 // Process the authentication
                 await this.processGoogleSignIn(result.user);
-            } else if (this.firebase.auth.currentUser) {
-                // User is already signed in
+                return; // Exit early to prevent duplicate processing
+            }
+            
+            // Check if user is already signed in (from previous session)
+            if (this.firebase.auth.currentUser) {
                 console.log('User already signed in:', this.firebase.auth.currentUser);
                 this.currentUser = this.firebase.auth.currentUser;
                 this.isOnline = true;
@@ -4885,9 +4892,13 @@ class HouseholdManager {
                     this.saveData('userProfile', this.userProfile);
                     this.showHouseholdCodeModal();
                 }
+            } else {
+                console.log('No user signed in, showing auth screen');
+                this.showAuthScreen();
             }
         } catch (error) {
             console.error('Error checking for redirect result:', error);
+            this.showAuthScreen();
         }
     }
 
@@ -4895,13 +4906,22 @@ class HouseholdManager {
     async processGoogleSignIn(user) {
         try {
             console.log('Processing Google sign-in for user:', user);
+            console.log('User details:', {
+                uid: user.uid,
+                email: user.email,
+                displayName: user.displayName,
+                photoURL: user.photoURL
+            });
             
             // Check if user already exists
             const userDoc = await this.firebase.getDoc(this.firebase.doc(this.firebase.db, 'users', user.uid));
+            console.log('User document exists:', userDoc.exists());
             
             if (userDoc.exists()) {
                 // Existing user - load their data
                 const userData = userDoc.data();
+                console.log('Existing user data:', userData);
+                
                 this.householdId = userData.householdId;
                 this.userProfile = userData.profile || this.userProfile;
                 
@@ -4940,17 +4960,21 @@ class HouseholdManager {
     // Set up Firebase auth state listener
     setupAuthStateListener() {
         this.firebase.onAuthStateChanged(this.firebase.auth, async (user) => {
+            console.log('Auth state changed:', user ? 'user signed in' : 'user signed out');
+            
             if (user) {
-                console.log('Auth state changed - user signed in:', user);
                 this.currentUser = user;
                 this.isOnline = true;
                 
-                // Check if we already processed this user (avoid duplicate processing)
-                if (!this.userProfile.name || this.userProfile.name === 'Alex Chen') {
+                // Only process if we haven't already processed this user
+                // This prevents duplicate processing when redirect result is handled
+                if (!this.userProfile.name || this.userProfile.name === 'Alex Chen' || this.userProfile.name === 'You') {
+                    console.log('Processing auth state change for user:', user);
                     await this.processGoogleSignIn(user);
+                } else {
+                    console.log('User already processed, skipping duplicate processing');
                 }
             } else {
-                console.log('Auth state changed - user signed out');
                 this.currentUser = null;
                 this.isOnline = false;
                 this.showAuthScreen();
