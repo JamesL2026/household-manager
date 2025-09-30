@@ -79,9 +79,31 @@ class CleanAuth {
                 this.app.saveData('householdId', this.app.householdId);
                 
                 await this.app.loadHouseholdData();
+                
+                // Force hide auth screen and show app
+                console.log('Hiding auth screen and showing app...');
                 this.app.hideAuthScreen();
                 this.app.initializeApp();
                 this.app.showNotification('Welcome back!', 'success');
+                
+                // Double-check that the transition happened
+                setTimeout(() => {
+                    const authScreen = document.getElementById('auth-screen');
+                    const appContainer = document.getElementById('app-container');
+                    console.log('Auth screen display:', authScreen ? authScreen.style.display : 'not found');
+                    console.log('App container display:', appContainer ? appContainer.style.display : 'not found');
+                    
+                    // Force transition if it didn't work
+                    if (authScreen && authScreen.style.display !== 'none') {
+                        console.log('Forcing auth screen to hide...');
+                        authScreen.style.display = 'none';
+                    }
+                    if (appContainer && appContainer.style.display !== 'flex') {
+                        console.log('Forcing app container to show...');
+                        appContainer.style.display = 'flex';
+                    }
+                }, 100);
+                
             } else {
                 // New user
                 console.log('New user - setting up profile');
@@ -93,6 +115,12 @@ class CleanAuth {
                 console.log('Updated user profile:', this.app.userProfile);
                 
                 this.app.saveData('userProfile', this.app.userProfile);
+                
+                // Hide auth screen for new users too
+                console.log('Hiding auth screen for new user...');
+                this.app.hideAuthScreen();
+                
+                // Show household code modal
                 this.app.showHouseholdCodeModal();
             }
         } catch (error) {
