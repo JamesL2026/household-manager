@@ -4838,12 +4838,61 @@ class HouseholdManager {
         }
     }
 
+    // Check for popup blockers and provide guidance
+    checkPopupBlocker() {
+        const testPopup = window.open('', '_blank', 'width=1,height=1');
+        if (!testPopup || testPopup.closed || typeof testPopup.closed === 'undefined') {
+            // Popup was blocked
+            this.showPopupBlockerWarning();
+        } else {
+            testPopup.close();
+        }
+    }
+
+    showPopupBlockerWarning() {
+        const warningDiv = document.createElement('div');
+        warningDiv.className = 'popup-warning';
+        warningDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 10000;
+            max-width: 300px;
+        `;
+        warningDiv.innerHTML = `
+            <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                <i class="fas fa-exclamation-triangle" style="color: #f39c12; margin-right: 8px;"></i>
+                <strong>Popup Blocker Detected</strong>
+            </div>
+            <p style="margin: 0; font-size: 12px; color: #666;">
+                For the best experience, please allow popups for this site. 
+                <a href="#" onclick="this.parentElement.parentElement.parentElement.remove()" style="color: #007bff;">Dismiss</a>
+            </p>
+        `;
+        document.body.appendChild(warningDiv);
+        
+        // Auto-dismiss after 10 seconds
+        setTimeout(() => {
+            if (warningDiv.parentElement) {
+                warningDiv.remove();
+            }
+        }, 10000);
+    }
+
     // Set up mandatory authentication screen
     setupMandatoryAuth() {
         console.log('Setting up mandatory authentication');
         
         // Show auth screen by default
         this.showAuthScreen();
+        
+        // Check for popup blockers
+        this.checkPopupBlocker();
         
         // Set up event listeners for auth options - use setTimeout to ensure DOM is ready
         setTimeout(() => {
