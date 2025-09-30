@@ -4895,6 +4895,38 @@ class HouseholdManager {
         }
     }
 
+    // Clear all authentication state (for debugging)
+    async clearAuthState() {
+        try {
+            console.log('Clearing all authentication state...');
+            
+            // Sign out from Firebase
+            if (this.firebase && this.firebase.auth) {
+                await this.firebase.signOut(this.firebase.auth);
+            }
+            
+            // Clear all local state
+            this.currentUser = null;
+            this.isOnline = false;
+            this.householdId = null;
+            this.isGuest = false;
+            
+            // Clear all local storage
+            this.clearAllData();
+            
+            // Clear any cached redirect results
+            if (this.firebase && this.firebase.auth) {
+                await this.firebase.getRedirectResult(this.firebase.auth);
+            }
+            
+            console.log('Authentication state cleared');
+            this.showNotification('Authentication state cleared', 'info');
+            
+        } catch (error) {
+            console.error('Error clearing auth state:', error);
+        }
+    }
+
     // Process Google sign-in result (used by both popup and redirect)
     async processGoogleSignIn(user) {
         try {
@@ -5210,6 +5242,8 @@ class HouseholdManager {
     async signInWithGoogle() {
         try {
             console.log('Attempting Google sign in...');
+            console.log('Firebase auth object:', this.firebase.auth);
+            console.log('GoogleAuthProvider:', this.firebase.GoogleAuthProvider);
             
             // Check if Firebase is properly configured
             if (!this.firebase || !this.firebase.auth || !this.firebase.GoogleAuthProvider) {
@@ -5217,6 +5251,11 @@ class HouseholdManager {
             }
             
             const provider = new this.firebase.GoogleAuthProvider();
+            console.log('Google provider created:', provider);
+            
+            // Add additional scopes if needed
+            provider.addScope('email');
+            provider.addScope('profile');
             
             // Use redirect method only (no popup)
             console.log('Using redirect method for Google sign-in...');
@@ -5224,16 +5263,24 @@ class HouseholdManager {
             
             // Use redirect method
             await this.firebase.signInWithRedirect(this.firebase.auth, provider);
+            console.log('Redirect initiated successfully');
             return; // Redirect will handle the rest
             
         } catch (error) {
             console.error('Google sign in error:', error);
+            console.error('Error details:', {
+                code: error.code,
+                message: error.message,
+                stack: error.stack
+            });
             
             // Log failed login attempt
-            this.firebase.logEvent(this.firebase.analytics, 'login_failed', {
-                method: 'google',
-                error_code: error.code
-            });
+            if (this.firebase && this.firebase.analytics) {
+                this.firebase.logEvent(this.firebase.analytics, 'login_failed', {
+                    method: 'google',
+                    error_code: error.code
+                });
+            }
             
             this.showNotification('Google sign in failed: ' + error.message, 'error');
         }
