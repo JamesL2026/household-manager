@@ -1823,6 +1823,136 @@ body {
     backdrop-filter: blur(5px);
 }
 
+/* Household Code Modal Specific Styles */
+#household-code-modal .modal-content {
+    max-width: 600px;
+    margin: 5% auto;
+}
+
+.household-options {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.option-card {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.option-card:hover {
+    border-color: #007bff;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.option-icon {
+    font-size: 48px;
+    color: #007bff;
+    margin-bottom: 16px;
+}
+
+.option-card h4 {
+    margin: 0 0 8px 0;
+    color: #333;
+    font-size: 20px;
+}
+
+.option-card p {
+    margin: 0 0 20px 0;
+    color: #666;
+    line-height: 1.5;
+}
+
+.household-divider {
+    text-align: center;
+    margin: 10px 0;
+    position: relative;
+}
+
+.household-divider span {
+    background: white;
+    padding: 0 20px;
+    color: #666;
+    font-weight: 500;
+}
+
+.household-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #e9ecef;
+    z-index: -1;
+}
+
+.household-help {
+    margin-top: 24px;
+    padding: 16px;
+    background: #e3f2fd;
+    border-radius: 8px;
+    border-left: 4px solid #2196f3;
+}
+
+.household-help p {
+    margin: 0;
+    color: #1976d2;
+    font-size: 14px;
+}
+
+.household-help i {
+    margin-right: 8px;
+}
+
+/* Household Success Modal Styles */
+.success-content {
+    text-align: center;
+}
+
+.household-code-display {
+    margin-bottom: 24px;
+}
+
+.household-code-display h4 {
+    margin: 0 0 16px 0;
+    color: #333;
+    font-size: 18px;
+}
+
+.code-box {
+    background: #f8f9fa;
+    border: 2px solid #007bff;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 16px 0;
+    display: inline-block;
+}
+
+.household-code {
+    font-family: 'Courier New', monospace;
+    font-size: 24px;
+    font-weight: bold;
+    color: #007bff;
+    letter-spacing: 2px;
+}
+
+.success-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 24px;
+}
+
+.success-actions .btn {
+    min-width: 140px;
+}
+
 .modal.active {
     display: flex;
     align-items: center;

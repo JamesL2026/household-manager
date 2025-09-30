@@ -1205,14 +1205,21 @@
     <div id="household-code-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Join or Create Household</h3>
+                <h3>🏠 Join or Create Household</h3>
+                <p>Welcome! Choose how you'd like to get started with your household management.</p>
             </div>
             <div class="modal-body">
                 <div class="household-options">
                     <div class="option-card" id="create-household-option">
+                        <div class="option-icon">
+                            <i class="fas fa-plus-circle"></i>
+                        </div>
                         <h4>Create New Household</h4>
-                        <p>Start a new household and invite your roommates</p>
-                        <button class="btn btn-primary" id="create-household-btn">Create Household</button>
+                        <p>Start a new household and invite your roommates with a unique code</p>
+                        <button class="btn btn-primary" id="create-household-btn">
+                            <i class="fas fa-home"></i>
+                            Create Household
+                        </button>
                     </div>
                     
                     <div class="household-divider">
@@ -1220,13 +1227,23 @@
                     </div>
                     
                     <div class="option-card" id="join-household-option">
-                        <h4>Join Existing Household</h4>
-                        <p>Enter the household code to join an existing household</p>
-                        <div class="form-group">
-                            <input type="text" id="join-household-code" placeholder="Enter household code" maxlength="6">
+                        <div class="option-icon">
+                            <i class="fas fa-key"></i>
                         </div>
-                        <button class="btn btn-secondary" id="join-household-btn">Join Household</button>
+                        <h4>Join Existing Household</h4>
+                        <p>Enter the household code provided by your roommate</p>
+                        <div class="form-group">
+                            <input type="text" id="join-household-code" placeholder="Enter 6-digit household code" maxlength="6" style="text-align: center; font-size: 18px; letter-spacing: 2px;">
+                        </div>
+                        <button class="btn btn-secondary" id="join-household-btn">
+                            <i class="fas fa-sign-in-alt"></i>
+                            Join Household
+                        </button>
                     </div>
+                </div>
+                
+                <div class="household-help">
+                    <p><i class="fas fa-info-circle"></i> <strong>Need help?</strong> Ask your roommate for the household code, or create a new household if you're the first one to set up the system.</p>
                 </div>
             </div>
         </div>

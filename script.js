@@ -4808,11 +4808,13 @@ class HouseholdManager {
                     await this.loadHouseholdData();
                     this.showNotification('Welcome back!', 'success');
                 } else {
-                    // New user - show household code modal
+                    // New user - update profile with Google data and show household code modal
                     this.userProfile.name = user.displayName || user.email.split('@')[0];
                     this.userProfile.email = user.email;
                     this.userProfile.avatar = user.photoURL;
                     this.userProfile.color = this.generateRandomColor();
+                    
+                    console.log('Updated user profile with Google data (redirect):', this.userProfile);
                     
                     // Save profile locally
                     this.saveData('userProfile', this.userProfile);
@@ -5071,11 +5073,13 @@ class HouseholdManager {
                 
                 this.showNotification('Welcome back!', 'success');
             } else {
-                // New user - show household code modal
+                // New user - update profile with Google data and show household code modal
                 this.userProfile.name = user.displayName || user.email.split('@')[0];
                 this.userProfile.email = user.email;
                 this.userProfile.avatar = user.photoURL;
                 this.userProfile.color = this.generateRandomColor();
+                
+                console.log('Updated user profile with Google data:', this.userProfile);
                 
                 // Save profile locally
                 this.saveData('userProfile', this.userProfile);
@@ -5120,6 +5124,75 @@ class HouseholdManager {
         if (modal) {
             modal.style.display = 'none';
             console.log('Household code modal hidden');
+        }
+    }
+
+    showHouseholdCodeSuccess(householdCode) {
+        // Create success modal if it doesn't exist
+        let successModal = document.getElementById('household-success-modal');
+        if (!successModal) {
+            successModal = document.createElement('div');
+            successModal.id = 'household-success-modal';
+            successModal.className = 'modal';
+            successModal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>🎉 Household Created Successfully!</h3>
+                    </div>
+                    <div class="modal-body">
+                        <div class="success-content">
+                            <div class="household-code-display">
+                                <h4>Your Household Code</h4>
+                                <div class="code-box">
+                                    <span class="household-code">${householdCode}</span>
+                                </div>
+                                <p>Share this code with your roommates so they can join your household.</p>
+                            </div>
+                            
+                            <div class="success-actions">
+                                <button class="btn btn-primary" id="copy-code-btn">
+                                    <i class="fas fa-copy"></i>
+                                    Copy Code
+                                </button>
+                                <button class="btn btn-secondary" id="continue-btn">
+                                    <i class="fas fa-arrow-right"></i>
+                                    Continue to App
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(successModal);
+        } else {
+            // Update the code if modal exists
+            const codeElement = successModal.querySelector('.household-code');
+            if (codeElement) {
+                codeElement.textContent = householdCode;
+            }
+        }
+        
+        successModal.style.display = 'flex';
+        
+        // Add event listeners
+        const copyBtn = document.getElementById('copy-code-btn');
+        const continueBtn = document.getElementById('continue-btn');
+        
+        if (copyBtn) {
+            copyBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(householdCode).then(() => {
+                    this.showNotification('Household code copied to clipboard!', 'success');
+                }).catch(() => {
+                    this.showNotification('Failed to copy code', 'error');
+                });
+            });
+        }
+        
+        if (continueBtn) {
+            continueBtn.addEventListener('click', () => {
+                successModal.style.display = 'none';
+                this.initializeApp();
+            });
         }
     }
 
@@ -5173,7 +5246,9 @@ class HouseholdManager {
             
             this.hideHouseholdCodeModal();
             this.updateProfileDisplay();
-            this.showNotification(`Household created! Code: ${householdCode}`, 'success');
+            
+            // Show success modal with household code
+            this.showHouseholdCodeSuccess(householdCode);
             
         } catch (error) {
             console.error('Error creating household:', error);
