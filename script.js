@@ -4484,28 +4484,6 @@ class HouseholdManager {
 // Initialize the application when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new HouseholdManager();
-    // Initialize default roommates if none exist
-    if (window.app.roommates.length === 0) {
-        window.app.roommates = [
-            { id: '1', name: 'You', email: '', color: '#1a73e8', createdAt: new Date().toISOString() },
-            { id: '2', name: 'Roommate 1', email: '', color: '#d93025', createdAt: new Date().toISOString() },
-            { id: '3', name: 'Roommate 2', email: '', color: '#34a853', createdAt: new Date().toISOString() }
-        ];
-        window.app.saveData('roommates', window.app.roommates);
-        window.app.renderRoommates();
-    }
-    // Initialize default chores if none exist
-    if (window.app.chores.length === 0) {
-        window.app.chores = [
-            { id: '1', name: 'Take out trash', frequency: 'weekly', assignedTo: '1', duration: 15, createdAt: new Date().toISOString() },
-            { id: '2', name: 'Vacuum living room', frequency: 'weekly', assignedTo: '2', duration: 30, createdAt: new Date().toISOString() },
-            { id: '3', name: 'Mop kitchen floor', frequency: 'weekly', assignedTo: '3', duration: 20, createdAt: new Date().toISOString() },
-            { id: '4', name: 'Deep clean bathroom', frequency: 'none', assignedTo: '1', duration: 45, createdAt: new Date().toISOString() }
-        ];
-        window.app.saveData('chores', window.app.chores);
-        window.app.renderCalendar();
-    }
-    // Login Modal Event Listeners
     setupLoginModal();
 });
 function setupLoginModal() {
