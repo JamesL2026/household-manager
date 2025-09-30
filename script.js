@@ -118,6 +118,8 @@ class HouseholdManager {
         this.householdId = null;
         this.isOnline = false;
         this.isGuest = false;
+        this.guestNotificationShown = false;
+        this.welcomeNotificationShown = false;
         
         console.log('Firebase available:', !!this.firebase);
         
@@ -130,8 +132,8 @@ class HouseholdManager {
         // Initialize Firebase listeners
         this.initFirebase();
         
-        // Initialize clean authentication
-        this.auth = new CleanAuth(this);
+        // Initialize simple authentication
+        this.auth = new SimpleAuth(this);
         this.auth.initialize();
         
         // Set up mandatory authentication
@@ -5162,8 +5164,11 @@ class HouseholdManager {
         // Update roommates display
         this.renderRoommates();
         
-        // Show guest notification
-        this.showNotification('Welcome! You are using guest mode. Data will be saved locally but won\'t sync across devices.', 'info');
+        // Show guest notification only once
+        if (!this.guestNotificationShown) {
+            this.showNotification('Welcome! You are using guest mode. Data will be saved locally but won\'t sync across devices.', 'info');
+            this.guestNotificationShown = true;
+        }
         
         console.log('Guest authentication completed');
     }
