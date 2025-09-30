@@ -1,34 +1,28 @@
-﻿// Firebase Realtime Database Manager
+// Firebase Realtime Database Manager
 class RealtimeDatabaseManager {
     constructor(firebase) {
         this.firebase = firebase;
         this.listeners = {};
     }
-
     async saveToRealtimeDatabase(path, data) {
         if (!this.householdId || !this.firebase) return;
-
         try {
             const fullPath = `households/${this.householdId}/${path}`;
             const dataRef = this.firebase.ref(this.firebase.database, fullPath);
-            
             // Add timestamp and user info
             const dataWithMeta = {
                 ...data,
                 updatedAt: new Date().toISOString(),
                 updatedBy: this.currentUser.uid
             };
-            
             await this.firebase.set(dataRef, dataWithMeta);
             console.log('Successfully saved to Realtime Database:', fullPath);
         } catch (error) {
             console.error('Error saving to Firebase Realtime Database:', error);
         }
     }
-
     async deleteFromRealtimeDatabase(path) {
         if (!this.householdId) return;
-
         try {
             const fullPath = `households/${this.householdId}/${path}`;
             const dataRef = this.firebase.ref(this.firebase.database, fullPath);
@@ -38,15 +32,12 @@ class RealtimeDatabaseManager {
             console.error('Error deleting from Firebase Realtime Database:', error);
         }
     }
-
     setupRealtimeListeners(householdId, app) {
         if (!householdId) {
             console.log('No household ID, skipping real-time listeners');
             return;
         }
-
         console.log('Setting up real-time listeners for household:', householdId);
-
         try {
             // Set up real-time listeners for each data type
             const dataTypes = [
@@ -60,20 +51,16 @@ class RealtimeDatabaseManager {
                 { key: 'polls', render: 'renderPolls' },
                 { key: 'notifications', render: 'updateNotificationBadge' }
             ];
-            
             for (const dataType of dataTypes) {
                 const dataRef = this.firebase.ref(this.firebase.database, `households/${householdId}/${dataType.key}`);
-                
                 // Remove existing listener if it exists
                 if (this.listeners[dataType.key]) {
                     this.firebase.off(this.listeners[dataType.key]);
                 }
-                
                 // Set up new listener
                 this.listeners[dataType.key] = this.firebase.onValue(dataRef, (snapshot) => {
                     const data = snapshot.val();
                     console.log(`Real-time update for ${dataType.key}:`, data);
-                    
                     // Convert to array if it's an object
                     let dataArray = data;
                     if (data && typeof data === 'object' && !Array.isArray(data)) {
@@ -81,26 +68,21 @@ class RealtimeDatabaseManager {
                     } else if (!data) {
                         dataArray = [];
                     }
-                    
                     // Update local data
                     app[dataType.key] = dataArray;
-                    
                     // Save to localStorage for offline access
                     localStorage.setItem(`household_${dataType.key}`, JSON.stringify(dataArray));
-                    
                     // Re-render the appropriate section
                     if (app[dataType.render]) {
                         app[dataType.render]();
                     }
                 });
             }
-
             console.log('All real-time listeners set up successfully');
         } catch (error) {
             console.error('Error setting up real-time listeners:', error);
         }
     }
-
     cleanupListeners() {
         for (const [key, listener] of Object.entries(this.listeners)) {
             this.firebase.off(listener);
@@ -109,30 +91,23 @@ class RealtimeDatabaseManager {
         this.listeners = {};
     }
 }
-
 // Household Manager Application with Firebase Integration
 class HouseholdManager {
     constructor() {
         console.log('HouseholdManager constructor called');
-        
         // Firebase integration
         this.firebase = window.firebase;
         this.currentUser = null;
         this.householdId = null;
         this.isOnline = false;
         this.isGuest = false;
-        
         console.log('Firebase available:', !!this.firebase);
-        
         // Clear all existing data for fresh start
         this.clearAllData();
-        
         // Initialize Firebase listeners
         this.initFirebase();
-        
         // Set up mandatory authentication
         this.setupMandatoryAuth();
-        
         // Initialize maintenance contact settings
         this.updateMaintenanceButton();
         this.roommates = this.loadData('roommates') || [];
@@ -141,7 +116,6 @@ class HouseholdManager {
         this.laundryBookings = this.loadData('laundryBookings') || [];
         this.maintenanceIssues = this.loadData('maintenanceIssues') || [];
         this.filteredMaintenanceIssues = [];
-        
         // New data structures for advanced features
         this.inventoryItems = this.loadData('inventoryItems') || [];
         this.bills = this.loadData('bills') || [];
@@ -152,18 +126,15 @@ class HouseholdManager {
         this.choreCompletions = this.loadData('choreCompletions') || [];
         this.roommatePreferences = this.loadData('roommatePreferences') || {};
         this.notifications = this.loadData('notifications') || [];
-        
         // Add default chore if none exist
         if (this.chores.length === 0) {
             this.addDefaultChore();
         }
-        
         this.settings = this.loadData('settings') || {
             emailNotifications: false,
             browserNotifications: false,
             currentUserId: 'user1' // Default user for demo
         };
-        
         // User profile data (independent of roommates)
         this.userProfile = this.loadData('userProfile') || {
             name: 'Alex Chen',
@@ -171,27 +142,21 @@ class HouseholdManager {
             avatar: null,
             color: this.generateRandomColor()
         };
-        
         this.currentView = 'weekly';
         this.currentDate = new Date();
         this.currentWeek = new Date();
-        
         // Laundry booking state
         this.isSelecting = false;
         this.selectionStart = null;
         this.selectionEnd = null;
         this.selectedCells = [];
-        
         // Current user (for personal tasks)
         this.currentUserId = 'user1'; // Default to first user
-        
         // Inventory filtering
         this.currentInventoryFilter = 'all';
         this.currentInventorySearch = '';
-        
         this.init();
     }
-
     init() {
         // Wait for DOM to be fully loaded
         if (document.readyState === 'loading') {
@@ -202,7 +167,6 @@ class HouseholdManager {
             this.initializeApp();
         }
     }
-
     initializeApp() {
         this.loadAllData();
         this.setupEventListeners();
@@ -219,30 +183,24 @@ class HouseholdManager {
         this.updateSettings();
         this.updateProfileDisplay();
         this.requestNotificationPermission();
-        
         // Initialize sample data if none exists
         this.initializeSampleData();
         this.initializeSampleNotifications();
         this.updateNotificationBadge();
-        
         // Check for upcoming chores
         this.checkUpcomingChores();
-        
         // Set up real-time sync simulation
         this.setupRealTimeSync();
-        
         // Set up periodic chore checking (every hour)
         setInterval(() => {
             this.checkUpcomingChores();
         }, 3600000); // 1 hour
-        
         // Show view controls for calendar tab (default active)
         const viewControls = document.getElementById('view-controls');
         if (viewControls) {
             viewControls.style.display = 'flex';
         }
     }
-
     // Data Management
     clearAllData() {
         console.log('Clearing all data for fresh start...');
@@ -263,14 +221,11 @@ class HouseholdManager {
             'household_settings',
             'pending_sync'
         ];
-        
         keysToRemove.forEach(key => {
             localStorage.removeItem(key);
         });
-        
         console.log('All data cleared for fresh start');
     }
-
     addDefaultChore() {
         console.log('Adding default chore: Take out trash');
         const defaultChore = {
@@ -283,25 +238,20 @@ class HouseholdManager {
             createdAt: new Date().toISOString(),
             completed: false
         };
-        
         this.chores = [defaultChore];
         this.saveData('chores', this.chores);
         console.log('Default chore added:', defaultChore);
     }
-
     async saveData(key, data) {
         console.log('Saving data:', key, data);
-        
         // Always save to localStorage for persistence
         localStorage.setItem(`household_${key}`, JSON.stringify(data));
-        
         // If user is authenticated and online, save to Firebase
         if (this.currentUser && this.isOnline && this.householdId) {
             console.log('Saving to Firebase:', key);
             try {
                 await this.saveToFirebase(key, data);
                 console.log('Successfully saved to Firebase:', key);
-                
                 // Log analytics event
                 this.firebase.logEvent(this.firebase.analytics, 'data_saved', {
                     data_type: key,
@@ -318,11 +268,9 @@ class HouseholdManager {
             // Mark data for sync when back online
             this.markForSync(key, data);
         }
-        
         // Simulate real-time sync by broadcasting changes
         this.broadcastChange(key, data);
     }
-
     // Enhanced data loading with persistence
     loadData(key) {
         const data = localStorage.getItem(`household_${key}`);
@@ -336,11 +284,9 @@ class HouseholdManager {
         }
         return null;
     }
-
     // Auto-save all data when user logs in
     async autoSaveAllData() {
         console.log('Auto-saving all data for persistence...');
-        
         const dataKeys = [
             'userProfile',
             'roommates', 
@@ -355,24 +301,20 @@ class HouseholdManager {
             'maintenanceIssues',
             'personalTasks'
         ];
-        
         for (const key of dataKeys) {
             const data = this[key];
             if (data && Array.isArray(data) ? data.length > 0 : data) {
                 await this.saveData(key, data);
             }
         }
-        
         console.log('Auto-save completed');
     }
-
     markForSync(key, data) {
         // Store data that needs to be synced when back online
         const pendingSync = JSON.parse(localStorage.getItem('pending_sync') || '{}');
         pendingSync[key] = data;
         localStorage.setItem('pending_sync', JSON.stringify(pendingSync));
     }
-
     async syncPendingData() {
         const pendingSync = JSON.parse(localStorage.getItem('pending_sync') || '{}');
         if (Object.keys(pendingSync).length > 0) {
@@ -388,12 +330,10 @@ class HouseholdManager {
             localStorage.removeItem('pending_sync');
         }
     }
-
     loadData(key) {
         const data = localStorage.getItem(`household_${key}`);
         return data ? JSON.parse(data) : null;
     }
-
     loadAllData() {
         // Load all data from localStorage
         this.roommates = this.loadData('roommates') || [];
@@ -417,7 +357,6 @@ class HouseholdManager {
         this.filteredMaintenanceIssues = [...this.maintenanceIssues];
         this.filteredBills = null;
     }
-
     // Real-time sync simulation
     setupRealTimeSync() {
         // Listen for storage changes (simulates other users making changes)
@@ -427,22 +366,18 @@ class HouseholdManager {
                 this.handleDataChange(key, e.newValue);
             }
         });
-
         // Simulate periodic sync (every 5 seconds)
         setInterval(() => {
             this.syncWithServer();
         }, 5000);
     }
-
     broadcastChange(key, data) {
         // In a real app, this would send data to a server
         // For now, we'll just log it
         console.log(`Broadcasting change for ${key}:`, data);
     }
-
     handleDataChange(key, newValue) {
         const data = newValue ? JSON.parse(newValue) : null;
-        
         switch (key) {
             case 'roommates':
                 this.roommates = data || [];
@@ -475,7 +410,6 @@ class HouseholdManager {
                 break;
         }
     }
-
     syncWithServer() {
         // In a real app, this would fetch latest data from server
         // For now, we'll just ensure data is saved
@@ -486,7 +420,6 @@ class HouseholdManager {
         this.saveData('bills', this.bills);
         this.saveData('notifications', this.notifications);
     }
-
     // Event Listeners
     setupEventListeners() {
         // Navigation - Sidebar (use event delegation)
@@ -499,27 +432,21 @@ class HouseholdManager {
                 }
             }
         });
-
         // View Controls
         document.querySelectorAll('.view-btn').forEach(btn => {
             btn.addEventListener('click', (e) => this.switchView(e.target.dataset.view));
         });
-
         // Calendar Navigation
         document.getElementById('prev-period').addEventListener('click', () => this.navigatePeriod(-1));
         document.getElementById('next-period').addEventListener('click', () => this.navigatePeriod(1));
-
         // Laundry Navigation
         document.getElementById('prev-week').addEventListener('click', () => this.navigateWeek(-1));
         document.getElementById('next-week').addEventListener('click', () => this.navigateWeek(1));
-
         // Laundry Reservation
         document.getElementById('reserve-laundry-btn').addEventListener('click', () => this.openLaundryBookingModal());
         document.getElementById('clear-selection').addEventListener('click', () => this.clearSelection());
-
         // Modal Controls
         this.setupModalListeners();
-
         // Maintenance
         document.getElementById('add-maintenance-btn').addEventListener('click', () => this.openModal('add-maintenance-modal'));
         document.getElementById('save-maintenance').addEventListener('click', () => this.saveMaintenanceIssue());
@@ -528,7 +455,6 @@ class HouseholdManager {
         document.getElementById('delete-maintenance').addEventListener('click', () => this.deleteMaintenanceIssue());
         document.getElementById('cancel-edit-maintenance').addEventListener('click', () => this.closeModal('edit-maintenance-modal'));
         document.getElementById('status-filter').addEventListener('change', (e) => this.filterMaintenanceIssues(e.target.value));
-
         // Inventory
         document.getElementById('add-item-btn').addEventListener('click', () => this.openModal('add-item-modal'));
         document.getElementById('save-item').addEventListener('click', () => this.saveInventoryItem());
@@ -538,7 +464,6 @@ class HouseholdManager {
         document.getElementById('low-stock-btn').addEventListener('click', () => this.showLowStockItems());
         document.getElementById('out-of-stock-btn').addEventListener('click', () => this.showOutOfStockItems());
         document.getElementById('clear-filters-btn').addEventListener('click', () => this.clearInventoryFilters());
-
         // Bills
         document.getElementById('add-bill-btn').addEventListener('click', () => this.openModal('add-bill-modal'));
         document.getElementById('save-bill').addEventListener('click', () => this.saveBill());
@@ -553,7 +478,6 @@ class HouseholdManager {
         document.getElementById('bills-search-input').addEventListener('input', (e) => {
             if (e.target.value === '') this.searchBills();
         });
-
         // Events
         document.getElementById('create-event-btn').addEventListener('click', () => this.openModal('create-event-modal'));
         document.getElementById('create-poll-btn').addEventListener('click', () => this.openModal('create-poll-modal'));
@@ -561,13 +485,10 @@ class HouseholdManager {
         document.getElementById('cancel-event').addEventListener('click', () => this.closeModal('create-event-modal'));
         document.getElementById('save-poll').addEventListener('click', () => this.savePoll());
         document.getElementById('cancel-poll').addEventListener('click', () => this.closeModal('create-poll-modal'));
-
         // Event tabs
         document.querySelectorAll('.event-tab').forEach(tab => {
             tab.addEventListener('click', (e) => this.switchEventTab(e.target.dataset.eventTab));
         });
-
-
         // Profile Photo Upload
         document.getElementById('user-profile').addEventListener('click', () => this.openProfileModal());
         document.getElementById('photo-upload-area').addEventListener('click', () => document.getElementById('photo-input').click());
@@ -575,7 +496,6 @@ class HouseholdManager {
         document.getElementById('remove-photo').addEventListener('click', () => this.removePhoto());
         document.getElementById('save-profile').addEventListener('click', () => this.saveProfile());
         document.getElementById('cancel-profile').addEventListener('click', () => this.closeModal('profile-photo-modal'));
-
         // Quick Actions (use event delegation)
         document.addEventListener('click', (e) => {
             if (e.target.closest('.quick-btn')) {
@@ -586,51 +506,42 @@ class HouseholdManager {
                 }
             }
         });
-
         // Chat button
         document.getElementById('chat-btn').addEventListener('click', () => {
             this.toggleChatPanel();
         });
-
         // Chat close button
         document.getElementById('chat-close').addEventListener('click', () => {
             this.closeChatPanel();
         });
-
         // Chat send button and input
         document.getElementById('chat-send-btn').addEventListener('click', () => {
             this.sendChatMessage();
         });
-
         document.getElementById('chat-input').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 this.sendChatMessage();
             }
         });
-
         // Chat search functionality
         document.getElementById('chat-search-btn').addEventListener('click', () => {
             this.searchChatMessages();
         });
-
         document.getElementById('chat-search').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 this.searchChatMessages();
             }
         });
-
         document.getElementById('chat-search').addEventListener('input', (e) => {
             if (e.target.value === '') {
                 this.renderChatMessages();
             }
         });
-
         // Chore details modal
         document.getElementById('edit-chore-from-details').addEventListener('click', () => {
             this.closeModal('chore-details-modal');
             this.editChore(this.currentChoreId);
         });
-
         document.getElementById('delete-chore-from-details').addEventListener('click', () => {
             if (confirm('Are you sure you want to delete this chore?')) {
                 this.chores = this.chores.filter(c => c.id !== this.currentChoreId);
@@ -642,31 +553,25 @@ class HouseholdManager {
                 this.showNotification('Chore deleted successfully!', 'success');
             }
         });
-
-
         // Notifications button
         document.getElementById('notifications-btn').addEventListener('click', () => {
             this.showNotificationsPanel();
         });
-
         // Settings
         document.getElementById('export-data').addEventListener('click', () => this.exportData());
         document.getElementById('import-data').addEventListener('click', () => this.importData());
         document.getElementById('email-notifications').addEventListener('change', (e) => this.updateSetting('emailNotifications', e.target.checked));
         document.getElementById('browser-notifications').addEventListener('change', (e) => this.updateSetting('browserNotifications', e.target.checked));
     }
-
     setupModalListeners() {
         // Add Roommate Modal
         document.getElementById('add-roommate-btn').addEventListener('click', () => this.openModal('add-roommate-modal'));
         document.getElementById('save-roommate').addEventListener('click', () => this.saveRoommate());
         document.getElementById('cancel-roommate').addEventListener('click', () => this.closeModal('add-roommate-modal'));
-
         // Add Chore Modal (Calendar)
         document.getElementById('add-chore-btn').addEventListener('click', () => this.openModal('add-chore-modal'));
         document.getElementById('save-chore').addEventListener('click', () => this.saveChore());
         document.getElementById('cancel-chore').addEventListener('click', () => this.closeModal('add-chore-modal'));
-
         // Add Chore Modal (Management) - Multiple approaches for reliability
         // Approach 1: Direct event listener
         setTimeout(() => {
@@ -681,33 +586,25 @@ class HouseholdManager {
                 console.error('Add chore manage button not found');
             }
         }, 100);
-        
         // Approach 2: Event delegation as backup
         document.addEventListener('click', (e) => {
             if (e.target.id === 'add-chore-manage-btn' || e.target.closest('#add-chore-manage-btn')) {
                 this.openModal('add-chore-modal');
             }
         });
-        
-
         // Edit Chore Modal
         document.getElementById('save-edit-chore').addEventListener('click', () => this.saveEditChore());
         document.getElementById('delete-chore').addEventListener('click', () => this.deleteChore());
         document.getElementById('cancel-edit-chore').addEventListener('click', () => this.closeModal('edit-chore-modal'));
-
-
         // Personal Task Modal
         document.getElementById('add-personal-chore-btn').addEventListener('click', () => this.openModal('add-personal-chore-modal'));
         document.getElementById('save-personal-chore').addEventListener('click', () => this.savePersonalTask());
         document.getElementById('cancel-personal-chore').addEventListener('click', () => this.closeModal('add-personal-chore-modal'));
-
         // Book Laundry from Personal
         document.getElementById('book-laundry-personal-btn').addEventListener('click', () => this.switchTab('laundry'));
-
         // Book Laundry Modal
         document.getElementById('save-laundry').addEventListener('click', () => this.saveLaundryBooking());
         document.getElementById('cancel-laundry').addEventListener('click', () => this.closeModal('book-laundry-modal'));
-
         // Close modals on outside click
         document.querySelectorAll('.modal').forEach(modal => {
             modal.addEventListener('click', (e) => {
@@ -716,7 +613,6 @@ class HouseholdManager {
                 }
             });
         });
-
         // Close modals on close button
         document.querySelectorAll('.close-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -724,25 +620,21 @@ class HouseholdManager {
             });
         });
     }
-
     // Navigation
     switchTab(tabName) {
         // Remove active class from all nav items
         document.querySelectorAll('.nav-item').forEach(tab => tab.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        
         // Add active class to selected nav item
         const selectedNavItem = document.querySelector(`[data-tab="${tabName}"]`);
         if (selectedNavItem) {
             selectedNavItem.classList.add('active');
         }
-        
         // Add active class to selected tab content
         const selectedTabContent = document.getElementById(tabName);
         if (selectedTabContent) {
             selectedTabContent.classList.add('active');
         }
-
         // Show/hide view controls based on tab
         const viewControls = document.getElementById('view-controls');
         if (tabName === 'calendar') {
@@ -750,7 +642,6 @@ class HouseholdManager {
         } else {
             viewControls.style.display = 'none';
         }
-
         if (tabName === 'laundry') {
             this.renderLaundrySchedule();
             this.updateLaundryStatus();
@@ -769,12 +660,10 @@ class HouseholdManager {
             this.renderEvents();
         }
     }
-
     switchView(view) {
         this.currentView = view;
         document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
         document.querySelector(`[data-view="${view}"]`).classList.add('active');
-        
         // Update calendar title based on view
         const titleElement = document.querySelector('#calendar h2');
         if (titleElement) {
@@ -790,10 +679,8 @@ class HouseholdManager {
                     break;
             }
         }
-        
         this.renderCalendar();
     }
-
     // Roommate Management
     openModal(modalId) {
         const modal = document.getElementById(modalId);
@@ -802,7 +689,6 @@ class HouseholdManager {
         } else {
             console.error('Modal not found:', modalId);
         }
-        
         if (modalId === 'add-chore-modal' || modalId === 'edit-chore-modal') {
             this.populateUserSelects();
             // Set default start date to today for new chores
@@ -826,13 +712,11 @@ class HouseholdManager {
             this.populateCreatorSelect();
         }
     }
-
     closeModal(modalId) {
         document.getElementById(modalId).classList.remove('active');
         this.clearModalForms();
         this.clearSelection();
     }
-
     populateUserSelects() {
         const selects = ['chore-assigned', 'edit-chore-assigned'];
         selects.forEach(selectId => {
@@ -840,11 +724,10 @@ class HouseholdManager {
             if (select) {
                 // For chore selects, add Random option first
                 if (selectId.includes('chore-assigned')) {
-                    select.innerHTML = '<option value="random">🎲 Random (Fair Rotation)</option>';
+                    select.innerHTML = '<option value="random">?? Random (Fair Rotation)</option>';
                 } else {
                     select.innerHTML = '<option value="">Select a roommate</option>';
                 }
-                
                 this.roommates.forEach(roommate => {
                     const option = document.createElement('option');
                     option.value = roommate.id;
@@ -854,35 +737,28 @@ class HouseholdManager {
             }
         });
     }
-
     generateRandomColor() {
         const colors = [
             '#FF6B6B', '#FF8C00', '#FFD700', '#32CD32', '#00CED1',
             '#1E90FF', '#8A2BE2', '#FF1493', '#FF4500', '#00FF7F'
         ];
-        
         // Get used colors
         const usedColors = this.roommates.map(r => r.color).filter(c => c);
-        
         // Find available colors
         const availableColors = colors.filter(c => !usedColors.includes(c));
-        
         // Return random available color or fallback to random color
         return availableColors.length > 0 ? 
             availableColors[Math.floor(Math.random() * availableColors.length)] :
             colors[Math.floor(Math.random() * colors.length)];
     }
-
     saveRoommate() {
         const name = document.getElementById('roommate-name').value;
         const email = document.getElementById('roommate-email').value;
         const color = document.getElementById('roommate-color').value || this.generateRandomColor();
-
         if (!name) {
             this.showNotification('Please enter a name', 'error');
             return;
         }
-
         const roommate = {
             id: Date.now().toString(),
             name,
@@ -890,24 +766,20 @@ class HouseholdManager {
             color,
             createdAt: new Date().toISOString()
         };
-
         this.roommates.push(roommate);
         this.saveData('roommates', this.roommates);
         this.renderRoommates();
         this.closeModal('add-roommate-modal');
         this.showNotification('Roommate added successfully!', 'success');
     }
-
     deleteRoommate(id) {
         if (confirm('Are you sure you want to remove this roommate?')) {
             this.roommates = this.roommates.filter(r => r.id !== id);
             this.chores = this.chores.filter(c => c.assignedTo !== id);
             this.laundryBookings = this.laundryBookings.filter(l => l.userId !== id);
-            
             this.saveData('roommates', this.roommates);
             this.saveData('chores', this.chores);
             this.saveData('laundryBookings', this.laundryBookings);
-            
             this.renderRoommates();
             this.renderCalendar();
             this.renderChoresList();
@@ -916,16 +788,13 @@ class HouseholdManager {
             this.showNotification('Roommate removed successfully!', 'success');
         }
     }
-
     renderRoommates() {
         const container = document.getElementById('roommates-list');
         container.innerHTML = '';
-
         if (this.roommates.length === 0) {
             container.innerHTML = '<p class="text-center">No roommates added yet. Click "Add Roommate" to get started!</p>';
             return;
         }
-
         this.roommates.forEach(roommate => {
             const card = document.createElement('div');
             card.className = 'roommate-card';
@@ -933,7 +802,6 @@ class HouseholdManager {
             card.style.color = 'white';
             card.style.borderRadius = '8px';
             card.style.padding = '16px';
-            
             card.innerHTML = `
                 <div class="roommate-name" style="color: white; font-weight: 600; font-size: 16px; margin-bottom: 8px;">${roommate.name}</div>
                 ${roommate.email ? `<div class="roommate-email" style="color: rgba(255, 255, 255, 0.9); font-size: 14px; margin-bottom: 12px;">${roommate.email}</div>` : ''}
@@ -946,11 +814,9 @@ class HouseholdManager {
                     </button>
                 </div>
             `;
-            
             container.appendChild(card);
         });
     }
-
     // Chore Management
     saveChore() {
         const name = document.getElementById('chore-name').value;
@@ -958,18 +824,15 @@ class HouseholdManager {
         const assignedTo = document.getElementById('chore-assigned').value;
         const startDate = document.getElementById('chore-start-date').value;
         const duration = parseInt(document.getElementById('chore-duration').value);
-
         if (!name || !assignedTo || !startDate) {
             this.showNotification('Please fill in all required fields', 'error');
             return;
         }
-
         // Handle random assignment
         let finalAssignedTo = assignedTo;
         if (assignedTo === 'random') {
             finalAssignedTo = this.getFairRandomAssignment(frequency);
         }
-
         const chore = {
             id: Date.now().toString(),
             name,
@@ -979,7 +842,6 @@ class HouseholdManager {
             duration,
             createdAt: new Date().toISOString()
         };
-
         this.chores.push(chore);
         this.saveData('chores', this.chores);
         this.renderCalendar();
@@ -987,7 +849,6 @@ class HouseholdManager {
         this.renderPersonalSchedule();
         this.closeModal('add-chore-modal');
         this.showNotification('Chore added successfully!', 'success');
-        
         // Add notification for chore assignment
         const assignedRoommate = this.roommates.find(r => r.id === finalAssignedTo);
         if (assignedRoommate) {
@@ -999,21 +860,17 @@ class HouseholdManager {
             );
         }
     }
-
     renderChoresList() {
         const container = document.getElementById('chores-list');
         container.innerHTML = '';
-
         if (this.chores.length === 0) {
             container.innerHTML = '<p class="text-center">No chores added yet. Click "Add Chore" to get started!</p>';
             return;
         }
-
         this.chores.forEach(chore => {
             const roommate = this.roommates.find(r => r.id === chore.assignedTo);
             const card = document.createElement('div');
             card.className = 'chore-item-card';
-            
             card.innerHTML = `
                 <div class="chore-item-header">
                     <div class="chore-item-name">${chore.name}</div>
@@ -1052,47 +909,36 @@ class HouseholdManager {
                     </div>
                 </div>
             `;
-            
             container.appendChild(card);
         });
     }
-
     editChore(choreId) {
         const chore = this.chores.find(c => c.id === choreId);
         if (!chore) return;
-
         document.getElementById('edit-chore-name').value = chore.name;
         document.getElementById('edit-chore-frequency').value = chore.frequency;
         document.getElementById('edit-chore-assigned').value = chore.assignedTo;
         document.getElementById('edit-chore-start-date').value = chore.startDate || '';
         document.getElementById('edit-chore-duration').value = chore.duration;
-        
-        
         // Store chore ID for saving
         document.getElementById('edit-chore-modal').dataset.choreId = choreId;
-        
         this.openModal('edit-chore-modal');
     }
-
     saveEditChore() {
         const choreId = document.getElementById('edit-chore-modal').dataset.choreId;
         const chore = this.chores.find(c => c.id === choreId);
         if (!chore) return;
-
         const assignedTo = document.getElementById('edit-chore-assigned').value;
-        
         // Handle random assignment
         let finalAssignedTo = assignedTo;
         if (assignedTo === 'random') {
             finalAssignedTo = this.getFairRandomAssignment(chore.frequency);
         }
-
         chore.name = document.getElementById('edit-chore-name').value;
         chore.frequency = document.getElementById('edit-chore-frequency').value;
         chore.assignedTo = finalAssignedTo;
         chore.startDate = document.getElementById('edit-chore-start-date').value;
         chore.duration = parseInt(document.getElementById('edit-chore-duration').value);
-
         this.saveData('chores', this.chores);
         this.renderCalendar();
         this.renderChoresList();
@@ -1100,11 +946,9 @@ class HouseholdManager {
         this.closeModal('edit-chore-modal');
         this.showNotification('Chore updated successfully!', 'success');
     }
-
     deleteChore() {
         const choreId = document.getElementById('edit-chore-modal').dataset.choreId;
         if (!choreId) return;
-
         if (confirm('Are you sure you want to delete this chore?')) {
             this.chores = this.chores.filter(c => c.id !== choreId);
             this.saveData('chores', this.chores);
@@ -1115,7 +959,6 @@ class HouseholdManager {
             this.showNotification('Chore deleted successfully!', 'success');
         }
     }
-
     deleteChoreDirect(choreId) {
         if (confirm('Are you sure you want to delete this chore?')) {
             this.chores = this.chores.filter(c => c.id !== choreId);
@@ -1126,20 +969,16 @@ class HouseholdManager {
             this.showNotification('Chore deleted successfully!', 'success');
         }
     }
-
     getFairRandomAssignment(frequency) {
         if (this.roommates.length === 0) return null;
-        
         // For weekly chores, use fair rotation based on assignment history
         if (frequency === 'weekly') {
             return this.getFairWeeklyAssignment();
         }
-        
         // For other frequencies, use simple random assignment
         const randomIndex = Math.floor(Math.random() * this.roommates.length);
         return this.roommates[randomIndex].id;
     }
-
     getFairWeeklyAssignment() {
         // Count how many weekly chores each roommate has
         const weeklyChoreCounts = {};
@@ -1148,29 +987,24 @@ class HouseholdManager {
                 chore.frequency === 'weekly' && chore.assignedTo === roommate.id
             ).length;
         });
-        
         // Find the roommate(s) with the fewest weekly chores
         const minCount = Math.min(...Object.values(weeklyChoreCounts));
         const leastAssignedRoommates = this.roommates.filter(roommate => 
             weeklyChoreCounts[roommate.id] === minCount
         );
-        
         // Randomly select from the least assigned roommates
         const randomIndex = Math.floor(Math.random() * leastAssignedRoommates.length);
         return leastAssignedRoommates[randomIndex].id;
     }
-
     // Laundry hover highlighting functions
     highlightBooking(day, hour) {
         const booking = this.getBookingForTime(day, hour);
         if (!booking) return;
-        
         // Find all cells that belong to this booking
         const startTime = new Date(booking.startTime);
         const endTime = new Date(booking.endTime);
         const startHour = startTime.getHours();
         const endHour = endTime.getHours();
-        
         // Highlight all cells in this booking
         for (let h = startHour; h < endHour; h++) {
             const cell = document.querySelector(`[data-hour="${h}"][data-date="${day.toISOString().split('T')[0]}"]`);
@@ -1179,58 +1013,48 @@ class HouseholdManager {
             }
         }
     }
-
     clearBookingHighlight() {
         // Remove highlighting from all cells
         document.querySelectorAll('.time-cell.highlighted').forEach(cell => {
             cell.classList.remove('highlighted');
         });
     }
-
     updateLaundryStatus() {
         const now = new Date();
         const washerStatus = document.getElementById('washer-status');
         const dryerStatus = document.getElementById('dryer-status');
-        
         if (!washerStatus || !dryerStatus) return;
-        
         // Check if washer is currently in use
         const washerInUse = this.laundryBookings.some(booking => {
             const startTime = new Date(booking.startTime);
             const endTime = new Date(booking.endTime);
             return booking.type === 'washer' && now >= startTime && now < endTime;
         });
-        
         // Check if dryer is currently in use
         const dryerInUse = this.laundryBookings.some(booking => {
             const startTime = new Date(booking.startTime);
             const endTime = new Date(booking.endTime);
             return booking.type === 'dryer' && now >= startTime && now < endTime;
         });
-        
         // Update washer status
         washerStatus.className = `status-dot ${washerInUse ? 'occupied' : 'available'}`;
         washerStatus.parentElement.querySelector('span').textContent = 
             washerInUse ? 'Washer In Use' : 'Washer Available';
-        
         // Update dryer status
         dryerStatus.className = `status-dot ${dryerInUse ? 'occupied' : 'available'}`;
         dryerStatus.parentElement.querySelector('span').textContent = 
             dryerInUse ? 'Dryer In Use' : 'Dryer Available';
     }
-
     // Personal Task Management
     savePersonalTask() {
         const name = document.getElementById('personal-chore-name').value;
         const date = document.getElementById('personal-chore-date').value;
         const time = document.getElementById('personal-chore-time').value;
         const notes = document.getElementById('personal-chore-notes').value;
-
         if (!name || !date) {
             this.showNotification('Please fill in all required fields', 'error');
             return;
         }
-
         const task = {
             id: Date.now().toString(),
             name,
@@ -1240,14 +1064,12 @@ class HouseholdManager {
             userId: this.currentUserId,
             createdAt: new Date().toISOString()
         };
-
         this.personalTasks.push(task);
         this.saveData('personalTasks', this.personalTasks);
         this.renderPersonalSchedule();
         this.closeModal('add-personal-chore-modal');
         this.showNotification('Personal task added successfully!', 'success');
     }
-
     completePersonalTask(taskId) {
         const task = this.personalTasks.find(t => t.id === taskId);
         if (task) {
@@ -1257,7 +1079,6 @@ class HouseholdManager {
             this.showNotification('Personal task completed!', 'success');
         }
     }
-
     deletePersonalTask(taskId) {
         if (confirm('Are you sure you want to delete this personal task?')) {
             this.personalTasks = this.personalTasks.filter(t => t.id !== taskId);
@@ -1266,30 +1087,25 @@ class HouseholdManager {
             this.showNotification('Personal task deleted!', 'success');
         }
     }
-
     renderPersonalSchedule() {
         this.renderPersonalChores();
         this.renderPersonalLaundry();
     }
-
     renderPersonalChores() {
         const container = document.getElementById('personal-chores');
         const myChores = this.chores.filter(chore => chore.assignedTo === this.currentUserId);
         const myPersonalTasks = this.personalTasks.filter(task => task.userId === this.currentUserId);
-        
         container.innerHTML = '';
-
         // Show assigned chores
         if (myChores.length > 0) {
         myChores.forEach(chore => {
             const item = document.createElement('div');
             item.className = 'personal-item';
-            
             item.innerHTML = `
                 <div class="personal-item-info">
                     <div class="personal-item-name">${chore.name}</div>
                     <div class="personal-item-details">
-                        ${chore.frequency.charAt(0).toUpperCase() + chore.frequency.slice(1)} • ${chore.duration} minutes
+                        ${chore.frequency.charAt(0).toUpperCase() + chore.frequency.slice(1)} � ${chore.duration} minutes
                     </div>
                 </div>
                 <div class="personal-item-actions">
@@ -1298,30 +1114,26 @@ class HouseholdManager {
                     </button>
                 </div>
             `;
-            
             container.appendChild(item);
         });
         }
-
         // Show personal tasks
         if (myPersonalTasks.length > 0) {
             myPersonalTasks.forEach(task => {
                 const item = document.createElement('div');
                 item.className = 'personal-item personal-task';
-                
                 const taskDate = new Date(task.date);
                 const formattedDate = taskDate.toLocaleDateString('en-US', { 
                     weekday: 'short', 
                     month: 'short', 
                     day: 'numeric' 
                 });
-                
                 item.innerHTML = `
                     <div class="personal-item-info">
                         <div class="personal-item-name">${task.name}</div>
                         <div class="personal-item-details">
-                            ${formattedDate}${task.time ? ' • ' + task.time : ''}
-                            ${task.notes ? ' • ' + task.notes : ''}
+                            ${formattedDate}${task.time ? ' � ' + task.time : ''}
+                            ${task.notes ? ' � ' + task.notes : ''}
                         </div>
                     </div>
                     <div class="personal-item-actions">
@@ -1333,41 +1145,33 @@ class HouseholdManager {
                         </button>
                     </div>
                 `;
-                
                 container.appendChild(item);
             });
         }
-
         // Show message if no tasks
         if (myChores.length === 0 && myPersonalTasks.length === 0) {
             container.innerHTML = '<p class="text-center">No chores or personal tasks yet.</p>';
         }
     }
-
     renderPersonalLaundry() {
         const container = document.getElementById('personal-laundry');
         const myBookings = this.laundryBookings.filter(booking => booking.userId === this.currentUserId);
-        
         container.innerHTML = '';
-
         if (myBookings.length === 0) {
             container.innerHTML = '<p class="text-center">No laundry bookings yet.</p>';
             return;
         }
-
         myBookings.forEach(booking => {
             const startTime = new Date(booking.startTime);
             const endTime = new Date(booking.endTime);
-            
             const item = document.createElement('div');
             item.className = 'personal-item';
-            
             item.innerHTML = `
                 <div class="personal-item-info">
                     <div class="personal-item-name">Laundry Booking</div>
                     <div class="personal-item-details">
-                        ${this.formatDate(startTime)} • ${this.formatTime(startTime)} - ${this.formatTime(endTime)}
-                        ${booking.notes ? ` • ${booking.notes}` : ''}
+                        ${this.formatDate(startTime)} � ${this.formatTime(startTime)} - ${this.formatTime(endTime)}
+                        ${booking.notes ? ` � ${booking.notes}` : ''}
                     </div>
                 </div>
                 <div class="personal-item-actions">
@@ -1379,31 +1183,24 @@ class HouseholdManager {
                     </button>
                 </div>
             `;
-            
             container.appendChild(item);
         });
     }
-
     rescheduleLaundryBooking(bookingId) {
         const booking = this.laundryBookings.find(b => b.id === bookingId);
         if (!booking) return;
-
         // Pre-fill the form with current booking data
         const startTime = new Date(booking.startTime);
         const endTime = new Date(booking.endTime);
-        
         document.getElementById('laundry-date').value = startTime.toISOString().split('T')[0];
         document.getElementById('laundry-start-time').value = this.formatTimeForInput(startTime.getHours(), startTime.getMinutes());
         document.getElementById('laundry-end-time').value = this.formatTimeForInput(endTime.getHours(), endTime.getMinutes());
         document.getElementById('laundry-user').value = booking.userId;
         document.getElementById('laundry-notes').value = booking.notes || '';
-        
         // Store booking ID for updating
         document.getElementById('book-laundry-modal').dataset.bookingId = bookingId;
-        
         this.openModal('book-laundry-modal');
     }
-
     cancelLaundryBooking(bookingId) {
         if (confirm('Are you sure you want to cancel this laundry booking?')) {
             this.laundryBookings = this.laundryBookings.filter(b => b.id !== bookingId);
@@ -1413,64 +1210,50 @@ class HouseholdManager {
             this.showNotification('Laundry booking cancelled!', 'success');
         }
     }
-
     // Random Assignment
     openRandomAssignModal() {
         const unassignedChores = this.chores.filter(chore => !chore.assignedTo);
-        
         if (unassignedChores.length === 0) {
             this.showNotification('No unassigned chores to randomly assign', 'info');
             return;
         }
-
         if (this.roommates.length === 0) {
             this.showNotification('No roommates available for assignment', 'error');
             return;
         }
-
         this.openModal('random-assign-modal');
         this.previewRandomAssignment();
     }
-
     previewRandomAssignment() {
         const unassignedChores = this.chores.filter(chore => !chore.assignedTo);
         const availableRoommates = [...this.roommates];
-        
         const preview = unassignedChores.map(chore => {
             const randomIndex = Math.floor(Math.random() * availableRoommates.length);
             const assignedRoommate = availableRoommates[randomIndex];
-            
             return {
                 chore: chore,
                 roommate: assignedRoommate
             };
         });
-
         const container = document.getElementById('assignment-preview');
         container.innerHTML = '';
-
         preview.forEach(item => {
             const assignmentItem = document.createElement('div');
             assignmentItem.className = 'assignment-item';
             assignmentItem.innerHTML = `
                 <div class="assignment-chore">${item.chore.name}</div>
-                <div class="assignment-assignee" style="color: ${item.roommate.color}">→ ${item.roommate.name}</div>
+                <div class="assignment-assignee" style="color: ${item.roommate.color}">? ${item.roommate.name}</div>
             `;
             container.appendChild(assignmentItem);
         });
     }
-
-
     // Calendar Rendering
     renderCalendar() {
         const container = document.getElementById('calendar-grid');
         const periodElement = document.getElementById('current-period');
-        
         container.className = `calendar-grid ${this.currentView}`;
-        
         let days = [];
         let periodTitle = '';
-
         switch (this.currentView) {
             case 'daily':
                 days = [this.currentDate];
@@ -1485,50 +1268,39 @@ class HouseholdManager {
                 periodTitle = this.formatDate(this.currentDate, { month: 'long', year: 'numeric' });
                 break;
         }
-
         periodElement.textContent = periodTitle;
         container.innerHTML = '';
-
         days.forEach(day => {
             const dayElement = this.createDayElement(day);
             container.appendChild(dayElement);
         });
     }
-
     createDayElement(date) {
         const dayElement = document.createElement('div');
         dayElement.className = 'calendar-day';
-        
         const isToday = this.isSameDay(date, new Date());
         if (isToday) {
             dayElement.classList.add('today');
         }
-
         const dayName = this.formatDate(date, { weekday: 'short' });
         const dayNumber = date.getDate();
-        
         dayElement.innerHTML = `
             <div class="calendar-day-header">${dayName}</div>
             <div class="calendar-day-number">${dayNumber}</div>
             <div class="chores-container"></div>
         `;
-
         const choresContainer = dayElement.querySelector('.chores-container');
         const dayChores = this.getChoresForDate(date);
-        
         dayChores.forEach(chore => {
             const choreElement = this.createChoreElement(chore);
             choresContainer.appendChild(choreElement);
         });
-
         return dayElement;
     }
-
     createChoreElement(chore) {
         const roommate = this.roommates.find(r => r.id === chore.assignedTo);
         const element = document.createElement('div');
         element.className = 'chore-item clickable-chore';
-        
         // Use roommate's assigned color instead of random color
         const choreColor = roommate ? roommate.color : '#1a73e8';
         element.style.backgroundColor = choreColor;
@@ -1538,7 +1310,6 @@ class HouseholdManager {
         element.onclick = () => this.showChoreDetails(chore.id);
         return element;
     }
-
     generateRandomColor() {
         const colors = [
             '#FF6B6B', '#FF8C00', '#FFD700', '#32CD32', '#00CED1',
@@ -1546,17 +1317,14 @@ class HouseholdManager {
         ];
         return colors[Math.floor(Math.random() * colors.length)];
     }
-
     showChoreDetails(choreId) {
         const chore = this.chores.find(c => c.id === choreId);
         if (!chore) return;
-
         this.currentChoreId = choreId;
         const roommate = this.roommates.find(r => r.id === chore.assignedTo);
         const isCurrentUser = chore.assignedTo === this.settings.currentUserId;
         const assignedName = isCurrentUser ? this.userProfile.name : (roommate?.name || 'Unknown');
         const youIndicator = isCurrentUser ? ' (YOU)' : '';
-
         // Populate the details modal
         document.getElementById('detail-chore-name').textContent = chore.name;
         document.getElementById('detail-chore-assigned').textContent = assignedName + youIndicator;
@@ -1564,10 +1332,8 @@ class HouseholdManager {
         document.getElementById('detail-chore-start-date').textContent = chore.startDate ? this.formatDate(new Date(chore.startDate)) : 'Not set';
         document.getElementById('detail-chore-duration').textContent = `${chore.duration} minutes`;
         document.getElementById('detail-chore-color').textContent = 'Based on assigned person\'s color';
-
         this.openModal('chore-details-modal');
     }
-
     getChoresForDate(date) {
         return this.chores.filter(chore => {
             // Check if the date is on or after the start date
@@ -1575,7 +1341,6 @@ class HouseholdManager {
             if (date < startDate) {
                 return false;
             }
-            
             switch (chore.frequency) {
                 case 'none':
                     return this.isSameDay(date, startDate);
@@ -1590,23 +1355,18 @@ class HouseholdManager {
             }
         });
     }
-
     // Laundry Management - Lettuce Meet Style
     renderLaundrySchedule() {
         const container = document.getElementById('time-grid');
         const weekElement = document.getElementById('current-week');
-        
         const weekDays = this.getWeekDays(this.currentWeek);
         weekElement.textContent = `Week of ${this.formatDate(weekDays[0])}`;
-        
         container.innerHTML = '';
-
         // Create time column header
         const timeHeader = document.createElement('div');
         timeHeader.className = 'time-column';
         timeHeader.textContent = 'Time';
         container.appendChild(timeHeader);
-
         // Create day headers (Monday to Sunday)
         const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         weekDays.forEach((day, index) => {
@@ -1618,7 +1378,6 @@ class HouseholdManager {
             `;
             container.appendChild(dayHeader);
         });
-
         // Create time slots (8 AM to 9 PM) - one cell per hour
         for (let hour = 8; hour < 22; hour++) {
             // Time label
@@ -1626,14 +1385,12 @@ class HouseholdManager {
             timeLabel.className = 'time-column';
             timeLabel.textContent = this.formatHour(hour);
             container.appendChild(timeLabel);
-
             // Day cells for this hour
             weekDays.forEach(day => {
                 const cell = document.createElement('div');
                 cell.className = 'time-cell';
                 cell.dataset.date = day.toISOString().split('T')[0];
                 cell.dataset.hour = hour;
-                
                 // Check if this time slot is booked
                 const isBooked = this.isTimeSlotBooked(day, hour);
                 if (isBooked) {
@@ -1641,11 +1398,9 @@ class HouseholdManager {
                     const startTime = new Date(booking.startTime);
                     const endTime = new Date(booking.endTime);
                     const isStartOfBooking = startTime.getHours() === hour;
-                    
                     // Determine if it's washer or dryer based on booking type
                     const bookingType = booking.type || 'washer'; // Default to washer
                     cell.classList.add('booked', bookingType);
-                    
                     // Only show name at the start of the booking
                     if (isStartOfBooking) {
                         const userNameDisplay = booking.userName + (booking.userId === this.settings.currentUserId ? ' (YOU)' : '');
@@ -1653,7 +1408,6 @@ class HouseholdManager {
                     } else {
                         cell.innerHTML = ''; // Empty for continuation cells
                     }
-                    
                     // Add hover tooltip with booking details
                     const startTimeStr = this.formatTime(startTime);
                     const endTimeStr = this.formatTime(endTime);
@@ -1665,30 +1419,24 @@ class HouseholdManager {
                     cell.classList.add('available');
                     cell.title = 'Available - Click to select';
                 }
-
                 // Add click event for selection
                 cell.addEventListener('click', (e) => this.handleTimeCellClick(e, cell));
                 cell.addEventListener('mousedown', (e) => this.handleMouseDown(e, cell));
                 cell.addEventListener('mouseenter', (e) => this.handleMouseEnter(e, cell));
                 cell.addEventListener('mouseup', (e) => this.handleMouseUp(e, cell));
-                
                 // Add hover events for highlighting bookings
                 if (isBooked) {
                     cell.addEventListener('mouseenter', (e) => this.highlightBooking(day, hour));
                     cell.addEventListener('mouseleave', (e) => this.clearBookingHighlight());
                 }
-
                 container.appendChild(cell);
             });
         }
-        
         // Update status indicators
         this.updateLaundryStatus();
     }
-
     handleTimeCellClick(e, cell) {
         if (cell.classList.contains('booked')) return;
-        
         // If clicking on an already selected cell, deselect it
         if (cell.classList.contains('selected')) {
             cell.classList.remove('selected');
@@ -1698,48 +1446,40 @@ class HouseholdManager {
             this.updateReserveButton();
             return;
         }
-        
         // Add to selection without clearing previous selections
         if (!this.selectedCells) {
             this.selectedCells = [];
         }
-        
         // Only allow selection within the same day
         if (this.selectedCells.length > 0) {
             const firstDate = this.selectedCells[0].dataset.date;
             const currentDate = cell.dataset.date;
-            
             if (firstDate !== currentDate) {
                 // Different day - clear previous selection and start new one
                 this.clearSelection();
             }
         }
-        
         // Add the cell to selection
         this.selectedCells.push(cell);
         cell.classList.add('selected');
         this.updateSelectionInfo();
         this.updateReserveButton();
     }
-
     handleMouseDown(e, cell) {
         if (cell.classList.contains('booked')) return;
         e.preventDefault();
         this.startSelection(cell);
     }
-
     handleMouseEnter(e, cell) {
         if (this.isSelecting && !cell.classList.contains('booked')) {
             this.updateSelection(cell);
         }
     }
-
     handleMouseUp(e, cell) {
         if (this.isSelecting) {
             this.endSelection(cell);
         }
     }
-
     startSelection(cell) {
         this.isSelecting = true;
         this.selectionStart = cell;
@@ -1748,17 +1488,13 @@ class HouseholdManager {
         this.updateSelectionInfo();
         this.updateReserveButton();
     }
-
     updateSelection(cell) {
         if (!this.isSelecting) return;
-        
         // Clear previous selection
         this.selectedCells.forEach(c => c.classList.remove('selected', 'selecting'));
-        
         // Only allow selection within the same day
         const startDate = this.selectionStart.dataset.date;
         const currentDate = cell.dataset.date;
-        
         if (startDate !== currentDate) {
             // If different day, only select the start cell
             this.selectedCells = [this.selectionStart];
@@ -1767,111 +1503,86 @@ class HouseholdManager {
             const dayCells = Array.from(document.querySelectorAll(`.time-cell:not(.booked)[data-date="${startDate}"]`));
             const startIndex = dayCells.indexOf(this.selectionStart);
             const endIndex = dayCells.indexOf(cell);
-            
             if (startIndex !== -1 && endIndex !== -1) {
                 const start = Math.min(startIndex, endIndex);
                 const end = Math.max(startIndex, endIndex);
-                
                 this.selectedCells = dayCells.slice(start, end + 1);
             } else {
                 this.selectedCells = [this.selectionStart];
             }
         }
-        
         this.selectedCells.forEach(c => c.classList.add('selected', 'selecting'));
         this.updateSelectionInfo();
         this.updateReserveButton();
     }
-
     endSelection(cell) {
         if (!this.isSelecting) return;
-        
         this.isSelecting = false;
         this.selectionEnd = cell;
-        
         // Remove selecting class from all cells
         this.selectedCells.forEach(c => c.classList.remove('selecting'));
-        
         this.updateSelectionInfo();
         this.updateReserveButton();
     }
-
     updateSelectionInfo() {
         const selectionInfo = document.getElementById('selection-info');
         const selectionText = document.getElementById('selection-text');
         const reserveBtn = document.getElementById('reserve-laundry-btn');
-        
         if (this.selectedCells.length === 0) {
             selectionInfo.style.display = 'none';
             reserveBtn.disabled = true;
             return;
         }
-        
         // Sort selected cells by hour to get proper time range
         const sortedCells = [...this.selectedCells].sort((a, b) => {
             const hourA = parseInt(a.dataset.hour);
             const hourB = parseInt(b.dataset.hour);
             return hourA - hourB;
         });
-        
         const firstCell = sortedCells[0];
         const lastCell = sortedCells[sortedCells.length - 1];
-        
         const startHour = parseInt(firstCell.dataset.hour);
         const endHour = parseInt(lastCell.dataset.hour) + 1;
         const date = firstCell.dataset.date;
-        
         const startTime = this.formatHour(startHour);
         const endTime = this.formatHour(endHour);
         const dayName = new Date(date).toLocaleDateString('en-US', { weekday: 'short' });
-        
         // Show time range and number of selected slots
         const slotCount = this.selectedCells.length;
         selectionText.textContent = `${dayName} ${startTime} - ${endTime} (${slotCount} slot${slotCount > 1 ? 's' : ''})`;
         selectionInfo.style.display = 'flex';
         reserveBtn.disabled = false;
     }
-
     updateReserveButton() {
         const reserveBtn = document.getElementById('reserve-laundry-btn');
         reserveBtn.disabled = this.selectedCells.length === 0;
     }
-
     openLaundryBookingModal() {
         if (this.selectedCells.length === 0) return;
-        
         // Sort selected cells by hour to get proper time range
         const sortedCells = [...this.selectedCells].sort((a, b) => {
             const hourA = parseInt(a.dataset.hour);
             const hourB = parseInt(b.dataset.hour);
             return hourA - hourB;
         });
-        
         const firstCell = sortedCells[0];
         const lastCell = sortedCells[sortedCells.length - 1];
-        
         const date = firstCell.dataset.date;
         const startHour = parseInt(firstCell.dataset.hour);
         const endHour = parseInt(lastCell.dataset.hour) + 1;
-        
         // Convert date to YYYY-MM-DD format for HTML date input
         const dateObj = new Date(date);
         const formattedDate = dateObj.toISOString().split('T')[0];
-        
         // Auto-fill the date and times
         document.getElementById('laundry-date').value = formattedDate;
         document.getElementById('laundry-start-time').value = this.formatTimeForInput(startHour, 0);
         document.getElementById('laundry-end-time').value = this.formatTimeForInput(endHour, 0);
-        
         // Set the current user from profile
         document.getElementById('laundry-user').value = this.userProfile.name;
-        
         // Clear any existing booking ID
         document.getElementById('book-laundry-modal').dataset.bookingId = '';
-        
         this.openModal('book-laundry-modal');
     }
-
     clearSelection() {
         this.isSelecting = false;
         this.selectionStart = null;
@@ -1883,7 +1594,6 @@ class HouseholdManager {
         this.updateSelectionInfo();
         this.updateReserveButton();
     }
-
     saveLaundryBooking() {
         const date = document.getElementById('laundry-date').value;
         const startTime = document.getElementById('laundry-start-time').value;
@@ -1891,18 +1601,15 @@ class HouseholdManager {
         const type = document.getElementById('laundry-type').value;
         const notes = document.getElementById('laundry-notes').value;
         const bookingId = document.getElementById('book-laundry-modal').dataset.bookingId;
-
         if (!date || !startTime || !endTime || !type) {
             this.showNotification('Please fill in all required fields', 'error');
             return;
         }
-
         // Use current user ID and profile name
         const userId = this.currentUserId;
         const startDateTime = new Date(`${date}T${startTime}`);
         const endDateTime = new Date(`${date}T${endTime}`);
         const userName = this.userProfile.name;
-
         if (bookingId) {
             // Update existing booking
             const booking = this.laundryBookings.find(b => b.id === bookingId);
@@ -1929,7 +1636,6 @@ class HouseholdManager {
             };
             this.laundryBookings.push(booking);
             this.showNotification('Laundry time booked successfully!', 'success');
-            
             // Add notification for laundry booking
             this.addNotification(
                 'Laundry Booking',
@@ -1938,7 +1644,6 @@ class HouseholdManager {
                 'booking'
             );
         }
-
         this.saveData('laundryBookings', this.laundryBookings);
         this.clearSelection();
         this.renderLaundrySchedule();
@@ -1946,34 +1651,28 @@ class HouseholdManager {
         this.updateLaundryStatus(); // Update status indicators
         this.closeModal('book-laundry-modal');
     }
-
     isTimeSlotBooked(date, hour) {
         return this.laundryBookings.some(booking => {
             const startTime = new Date(booking.startTime);
             const endTime = new Date(booking.endTime);
             const checkTime = new Date(date);
             checkTime.setHours(hour, 0, 0, 0);
-            
             return checkTime >= startTime && checkTime < endTime;
         });
     }
-
     getBookingForTime(date, hour) {
         return this.laundryBookings.find(booking => {
             const startTime = new Date(booking.startTime);
             const endTime = new Date(booking.endTime);
             const checkTime = new Date(date);
             checkTime.setHours(hour, 0, 0, 0);
-            
             return checkTime >= startTime && checkTime < endTime;
         });
     }
-
     navigateWeek(direction) {
         this.currentWeek.setDate(this.currentWeek.getDate() + (direction * 7));
         this.renderLaundrySchedule();
     }
-
     // Calendar Navigation
     navigatePeriod(direction) {
         switch (this.currentView) {
@@ -1989,7 +1688,6 @@ class HouseholdManager {
         }
         this.renderCalendar();
     }
-
     // Utility Functions
     formatDate(date, options = {}) {
         const defaultOptions = { 
@@ -1999,7 +1697,6 @@ class HouseholdManager {
         };
         return date.toLocaleDateString('en-US', { ...defaultOptions, ...options });
     }
-
     formatTime(date) {
         return date.toLocaleTimeString('en-US', { 
             hour: '2-digit', 
@@ -2007,35 +1704,29 @@ class HouseholdManager {
             hour12: true 
         });
     }
-
     formatHour(hour) {
         if (hour === 0) return '12 AM';
         if (hour < 12) return `${hour} AM`;
         if (hour === 12) return '12 PM';
         return `${hour - 12} PM`;
     }
-
     formatTimeForInput(hour, minute) {
         const h = hour.toString().padStart(2, '0');
         const m = minute.toString().padStart(2, '0');
         return `${h}:${m}`;
     }
-
     isSameDay(date1, date2) {
         return date1.getFullYear() === date2.getFullYear() &&
                date1.getMonth() === date2.getMonth() &&
                date1.getDate() === date2.getDate();
     }
-
     isSameTime(date1, date2) {
         return date1.getHours() === date2.getHours() &&
                date1.getMinutes() === date2.getMinutes();
     }
-
     isSameDayOfWeek(date1, date2) {
         return date1.getDay() === date2.getDay();
     }
-
     getWeekDays(date) {
         const days = [];
         const startOfWeek = new Date(date);
@@ -2043,7 +1734,6 @@ class HouseholdManager {
         const dayOfWeek = date.getDay();
         const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
         startOfWeek.setDate(date.getDate() + daysToMonday);
-        
         for (let i = 0; i < 7; i++) {
             const day = new Date(startOfWeek);
             day.setDate(startOfWeek.getDate() + i);
@@ -2051,14 +1741,12 @@ class HouseholdManager {
         }
         return days;
     }
-
     getMonthDays(date) {
         const days = [];
         const year = date.getFullYear();
         const month = date.getMonth();
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
-        
         // Add days from previous month to fill the first week
         const startDay = firstDay.getDay();
         for (let i = startDay - 1; i >= 0; i--) {
@@ -2066,52 +1754,42 @@ class HouseholdManager {
             day.setDate(firstDay.getDate() - i - 1);
             days.push(day);
         }
-        
         // Add days of current month
         for (let day = 1; day <= lastDay.getDate(); day++) {
             days.push(new Date(year, month, day));
         }
-        
         // Add days from next month to fill the last week
         const remainingDays = 42 - days.length; // 6 weeks * 7 days
         for (let day = 1; day <= remainingDays; day++) {
             days.push(new Date(year, month + 1, day));
         }
-        
         return days;
     }
-
     // Settings
     updateSetting(key, value) {
         this.settings[key] = value;
         this.saveData('settings', this.settings);
         this.updateSettings();
     }
-
     updateSettings() {
         document.getElementById('email-notifications').checked = this.settings.emailNotifications;
         document.getElementById('browser-notifications').checked = this.settings.browserNotifications;
     }
-
     // Notifications
     requestNotificationPermission() {
         if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission();
         }
     }
-
     showNotification(message, type = 'info') {
         const container = document.getElementById('notifications');
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
         notification.textContent = message;
-        
         container.appendChild(notification);
-        
         setTimeout(() => {
             notification.remove();
         }, 5000);
-
         // Browser notification
         if (this.settings.browserNotifications && 'Notification' in window && Notification.permission === 'granted') {
             new Notification('Household Manager', {
@@ -2120,7 +1798,6 @@ class HouseholdManager {
             });
         }
     }
-
     // Data Export/Import
     exportData() {
         const data = {
@@ -2131,7 +1808,6 @@ class HouseholdManager {
             settings: this.settings,
             exportDate: new Date().toISOString()
         };
-
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -2139,10 +1815,8 @@ class HouseholdManager {
         a.download = `household-data-${new Date().toISOString().split('T')[0]}.json`;
         a.click();
         URL.revokeObjectURL(url);
-
         this.showNotification('Data exported successfully!', 'success');
     }
-
     importData() {
         const input = document.createElement('input');
         input.type = 'file';
@@ -2154,26 +1828,22 @@ class HouseholdManager {
                 reader.onload = (e) => {
                     try {
                         const data = JSON.parse(e.target.result);
-                        
                         if (data.roommates) this.roommates = data.roommates;
                         if (data.chores) this.chores = data.chores;
                         if (data.personalTasks) this.personalTasks = data.personalTasks;
                         if (data.laundryBookings) this.laundryBookings = data.laundryBookings;
                         if (data.settings) this.settings = data.settings;
-                        
                         this.saveData('roommates', this.roommates);
                         this.saveData('chores', this.chores);
                         this.saveData('personalTasks', this.personalTasks);
                         this.saveData('laundryBookings', this.laundryBookings);
                         this.saveData('settings', this.settings);
-                        
                         this.renderRoommates();
                         this.renderCalendar();
                         this.renderChoresList();
                         this.renderPersonalSchedule();
                         this.renderLaundrySchedule();
                         this.updateSettings();
-                        
                         this.showNotification('Data imported successfully!', 'success');
                     } catch (error) {
                         this.showNotification('Error importing data. Please check the file format.', 'error');
@@ -2184,11 +1854,9 @@ class HouseholdManager {
         };
         input.click();
     }
-
     clearModalForms() {
         document.querySelectorAll('form').forEach(form => form.reset());
     }
-
     // Maintenance Management
     populateReporterSelect() {
         const select = document.getElementById('maintenance-reporter');
@@ -2200,7 +1868,6 @@ class HouseholdManager {
             select.appendChild(option);
         });
     }
-
     populatePurchasedBySelect() {
         const select = document.getElementById('item-purchased-by');
         select.innerHTML = '<option value="">Select purchaser</option>';
@@ -2211,7 +1878,6 @@ class HouseholdManager {
             select.appendChild(option);
         });
     }
-
     populatePaidBySelect() {
         const select = document.getElementById('bill-paid-by');
         select.innerHTML = '<option value="">Select payer</option>';
@@ -2222,7 +1888,6 @@ class HouseholdManager {
             select.appendChild(option);
         });
     }
-
     populateCreatorSelect() {
         const selects = ['event-creator', 'poll-creator'];
         selects.forEach(selectId => {
@@ -2238,22 +1903,18 @@ class HouseholdManager {
             }
         });
     }
-
     saveMaintenanceIssue() {
         const title = document.getElementById('maintenance-title').value;
         const area = document.getElementById('maintenance-area').value;
         const priority = document.getElementById('maintenance-priority').value;
         const description = document.getElementById('maintenance-description').value;
         const reporter = document.getElementById('maintenance-reporter').value;
-
         if (!title || !area || !description) {
             this.showNotification('Please fill in all required fields', 'error');
             return;
         }
-
         const isCurrentUser = reporter === this.settings.currentUserId;
         const reporterName = isCurrentUser ? this.userProfile.name : (this.roommates.find(r => r.id === reporter)?.name || 'Unknown');
-
         const issue = {
             id: Date.now().toString(),
             title,
@@ -2265,23 +1926,19 @@ class HouseholdManager {
             status: 'not-reported',
             createdAt: new Date().toISOString()
         };
-
         this.maintenanceIssues.push(issue);
         this.saveData('maintenanceIssues', this.maintenanceIssues);
         this.renderMaintenanceList();
         this.closeModal('add-maintenance-modal');
         this.showNotification('Maintenance issue added successfully!', 'success');
     }
-
     renderMaintenanceList() {
         const container = document.getElementById('maintenance-list');
         container.innerHTML = '';
-
         if (this.filteredMaintenanceIssues.length === 0) {
             container.innerHTML = '<p class="text-center">No maintenance issues found for the selected filter.</p>';
             return;
         }
-
         // Sort by priority and date
         const sortedIssues = this.filteredMaintenanceIssues.sort((a, b) => {
             const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
@@ -2289,11 +1946,9 @@ class HouseholdManager {
             if (priorityDiff !== 0) return priorityDiff;
             return new Date(b.createdAt) - new Date(a.createdAt);
         });
-
         sortedIssues.forEach(issue => {
             const item = document.createElement('div');
             item.className = 'maintenance-item';
-            
             item.innerHTML = `
                 <div class="maintenance-item-header">
                     <div class="maintenance-item-title">${issue.title}</div>
@@ -2334,48 +1989,38 @@ class HouseholdManager {
                     <div class="maintenance-detail-value">${issue.description}</div>
                 </div>
             `;
-            
             container.appendChild(item);
         });
     }
-
     editMaintenanceIssue(issueId) {
         const issue = this.maintenanceIssues.find(i => i.id === issueId);
         if (!issue) return;
-
         document.getElementById('edit-maintenance-title').value = issue.title;
         document.getElementById('edit-maintenance-area').value = issue.area;
         document.getElementById('edit-maintenance-priority').value = issue.priority;
         document.getElementById('edit-maintenance-status').value = issue.status;
         document.getElementById('edit-maintenance-description').value = issue.description;
-        
         // Store issue ID for saving
         document.getElementById('edit-maintenance-modal').dataset.issueId = issueId;
-        
         this.openModal('edit-maintenance-modal');
     }
-
     saveEditMaintenance() {
         const issueId = document.getElementById('edit-maintenance-modal').dataset.issueId;
         const issue = this.maintenanceIssues.find(i => i.id === issueId);
         if (!issue) return;
-
         issue.title = document.getElementById('edit-maintenance-title').value;
         issue.area = document.getElementById('edit-maintenance-area').value;
         issue.priority = document.getElementById('edit-maintenance-priority').value;
         issue.status = document.getElementById('edit-maintenance-status').value;
         issue.description = document.getElementById('edit-maintenance-description').value;
-
         this.saveData('maintenanceIssues', this.maintenanceIssues);
         this.renderMaintenanceList();
         this.closeModal('edit-maintenance-modal');
         this.showNotification('Maintenance issue updated successfully!', 'success');
     }
-
     deleteMaintenanceIssue() {
         const issueId = document.getElementById('edit-maintenance-modal').dataset.issueId;
         if (!issueId) return;
-
         if (confirm('Are you sure you want to delete this maintenance issue?')) {
             this.maintenanceIssues = this.maintenanceIssues.filter(i => i.id !== issueId);
             this.saveData('maintenanceIssues', this.maintenanceIssues);
@@ -2384,24 +2029,19 @@ class HouseholdManager {
             this.showNotification('Maintenance issue deleted successfully!', 'success');
         }
     }
-
     saveGoogleFormUrl() {
         const url = document.getElementById('google-form-url').value;
         if (!url) {
             this.showNotification('Please enter a valid Google Form URL', 'error');
             return;
         }
-
         this.settings.googleFormUrl = url;
         this.saveData('settings', this.settings);
-        
         // Update the link
         const link = document.getElementById('google-form-link');
         link.href = url;
-        
         this.showNotification('Google Form URL saved successfully!', 'success');
     }
-
     filterMaintenanceIssues(status) {
         if (status === 'all') {
             this.filteredMaintenanceIssues = [...this.maintenanceIssues];
@@ -2410,12 +2050,10 @@ class HouseholdManager {
         }
         this.renderMaintenanceList();
     }
-
     updateSettings() {
         document.getElementById('email-notifications').checked = this.settings.emailNotifications;
         document.getElementById('browser-notifications').checked = this.settings.browserNotifications;
     }
-
     // Sample Data Initialization
     initializeSampleData() {
         // Don't initialize roommates - let users add their own
@@ -2435,8 +2073,6 @@ class HouseholdManager {
             this.initializeRoommatePreferences();
         }
     }
-
-
     initializeSampleInventory() {
         const sampleItems = [
             { id: 'item1', name: 'Dish Soap', category: 'cleaning', quantity: 2, minQuantity: 1, purchasedBy: this.settings.currentUserId, cost: 3.99, lastUpdated: new Date().toISOString() },
@@ -2445,29 +2081,24 @@ class HouseholdManager {
             { id: 'item4', name: 'Milk', category: 'groceries', quantity: 0, minQuantity: 1, purchasedBy: this.settings.currentUserId, cost: 4.99, lastUpdated: new Date().toISOString() },
             { id: 'item5', name: 'Trash Bags', category: 'cleaning', quantity: 3, minQuantity: 2, purchasedBy: this.settings.currentUserId, cost: 6.99, lastUpdated: new Date().toISOString() }
         ];
-        
         this.inventoryItems = sampleItems;
         this.saveData('inventoryItems', this.inventoryItems);
     }
-
     initializeSampleBills() {
         // Don't initialize sample bills - let users create their own
         this.bills = [];
         this.saveData('bills', this.bills);
     }
-
     initializeSampleEvents() {
         // Don't initialize sample events - let users create their own
         this.events = [];
         this.saveData('events', this.events);
     }
-
     initializeSamplePolls() {
         // Don't initialize sample polls - let users create their own
         this.polls = [];
         this.saveData('polls', this.polls);
     }
-
     initializeRoommatePreferences() {
         const preferences = {};
         this.roommates.forEach(roommate => {
@@ -2478,24 +2109,19 @@ class HouseholdManager {
                 badges: []
             };
         });
-        
         this.roommatePreferences = preferences;
         this.saveData('roommatePreferences', this.roommatePreferences);
     }
-
     // Inventory Management
     renderInventory() {
         const container = document.getElementById('inventory-grid');
         container.innerHTML = '';
-
         if (this.inventoryItems.length === 0) {
             container.innerHTML = '<p class="text-center">No inventory items yet. Add some items to get started!</p>';
             return;
         }
-
         // Filter items based on category and search
         let filteredItems = this.inventoryItems;
-
         // Apply category filter
         if (this.currentInventoryFilter && this.currentInventoryFilter !== 'all') {
             if (this.currentInventoryFilter === 'low-stock') {
@@ -2506,7 +2132,6 @@ class HouseholdManager {
                 filteredItems = filteredItems.filter(item => item.category === this.currentInventoryFilter);
             }
         }
-
         // Apply search filter
         if (this.currentInventorySearch) {
             filteredItems = filteredItems.filter(item => 
@@ -2514,21 +2139,17 @@ class HouseholdManager {
                 item.category.toLowerCase().includes(this.currentInventorySearch)
             );
         }
-
         if (filteredItems.length === 0) {
             container.innerHTML = '<p class="text-center">No items match your current filter. Try adjusting your search or filter criteria.</p>';
             return;
         }
-
         filteredItems.forEach(item => {
             const itemElement = document.createElement('div');
             itemElement.className = 'inventory-item';
-            
             const isLowStock = item.quantity <= item.minQuantity;
             const isCurrentUser = item.purchasedBy === this.settings.currentUserId;
             const purchasedBy = isCurrentUser ? this.userProfile.name : (this.roommates.find(r => r.id === item.purchasedBy)?.name || 'Unknown');
             const youIndicator = isCurrentUser ? ' (YOU)' : '';
-            
             itemElement.innerHTML = `
                 <div class="inventory-item-header">
                     <div class="inventory-item-name">${item.name}</div>
@@ -2563,11 +2184,9 @@ class HouseholdManager {
                     </button>
                 </div>
             `;
-            
             container.appendChild(itemElement);
         });
     }
-
     saveInventoryItem() {
         const name = document.getElementById('item-name').value;
         const category = document.getElementById('item-category').value;
@@ -2575,12 +2194,10 @@ class HouseholdManager {
         const minQuantity = parseInt(document.getElementById('item-min-quantity').value);
         const purchasedBy = document.getElementById('item-purchased-by').value;
         const cost = parseFloat(document.getElementById('item-cost').value) || 0;
-
         if (!name || !category || isNaN(quantity)) {
             this.showNotification('Please fill in all required fields', 'error');
             return;
         }
-
         const item = {
             id: Date.now().toString(),
             name,
@@ -2591,51 +2208,41 @@ class HouseholdManager {
             cost,
             lastUpdated: new Date().toISOString()
         };
-
         this.inventoryItems.push(item);
         this.saveData('inventoryItems', this.inventoryItems);
         this.renderInventory();
         this.closeModal('add-item-modal');
         this.showNotification('Inventory item added successfully!', 'success');
     }
-
     updateInventoryItem(itemId, change) {
         const item = this.inventoryItems.find(i => i.id === itemId);
         if (!item) return;
-
         item.quantity = Math.max(0, item.quantity + change);
         item.lastUpdated = new Date().toISOString();
-        
         this.saveData('inventoryItems', this.inventoryItems);
         this.renderInventory();
-        
         if (item.quantity <= item.minQuantity) {
             this.showNotification(`${item.name} is running low!`, 'warning');
         }
     }
-
     filterInventory(category) {
         this.currentInventoryFilter = category;
         this.renderInventory();
     }
-
     searchInventory(query) {
         this.currentInventorySearch = query.toLowerCase();
         this.renderInventory();
     }
-
     showLowStockItems() {
         this.currentInventoryFilter = 'low-stock';
         this.renderInventory();
         this.showNotification('Showing low stock items only', 'info');
     }
-
     showOutOfStockItems() {
         this.currentInventoryFilter = 'out-of-stock';
         this.renderInventory();
         this.showNotification('Showing out of stock items only', 'info');
     }
-
     clearInventoryFilters() {
         this.currentInventoryFilter = 'all';
         this.currentInventorySearch = '';
@@ -2644,14 +2251,11 @@ class HouseholdManager {
         this.renderInventory();
         this.showNotification('Filters cleared', 'info');
     }
-
     // Bills Management
     renderBills() {
         const container = document.getElementById('bills-list');
         container.innerHTML = '';
-
         let billsToShow = this.filteredBills || this.bills;
-        
         // Apply search filter if there's a search term
         const searchTerm = document.getElementById('bills-search-input')?.value?.toLowerCase() || '';
         if (searchTerm) {
@@ -2661,41 +2265,35 @@ class HouseholdManager {
                 this.roommates.find(r => r.id === bill.paidBy)?.name?.toLowerCase().includes(searchTerm)
             );
         }
-
         if (billsToShow.length === 0) {
             container.innerHTML = '<p class="text-center">No bills found. Try adjusting your filter or add a bill to get started!</p>';
             return;
         }
-
         billsToShow.forEach(bill => {
             const billElement = document.createElement('div');
             billElement.className = 'bill-item';
-            
             const paidBy = this.roommates.find(r => r.id === bill.paidBy)?.name || 'Unknown';
             const totalPaid = bill.splits.filter(s => s.paid).length;
             const totalSplits = bill.splits.length;
             const isOverdue = new Date(bill.dueDate) < new Date() && totalPaid < totalSplits;
             const isFullyPaid = totalPaid === totalSplits;
-            
             // Get bill category icon
             const getBillIcon = (description) => {
                 const desc = description.toLowerCase();
-                if (desc.includes('rent') || desc.includes('mortgage')) return '🏠';
-                if (desc.includes('electric') || desc.includes('power')) return '⚡';
-                if (desc.includes('water')) return '💧';
-                if (desc.includes('gas') || desc.includes('heating')) return '🔥';
-                if (desc.includes('internet') || desc.includes('wifi')) return '📶';
-                if (desc.includes('cable') || desc.includes('tv')) return '📺';
-                if (desc.includes('phone') || desc.includes('mobile')) return '📱';
-                if (desc.includes('grocery') || desc.includes('food')) return '🛒';
-                if (desc.includes('insurance')) return '🛡️';
-                if (desc.includes('maintenance') || desc.includes('repair')) return '🔧';
-                return '📄';
+                if (desc.includes('rent') || desc.includes('mortgage')) return '??';
+                if (desc.includes('electric') || desc.includes('power')) return '?';
+                if (desc.includes('water')) return '??';
+                if (desc.includes('gas') || desc.includes('heating')) return '??';
+                if (desc.includes('internet') || desc.includes('wifi')) return '??';
+                if (desc.includes('cable') || desc.includes('tv')) return '??';
+                if (desc.includes('phone') || desc.includes('mobile')) return '??';
+                if (desc.includes('grocery') || desc.includes('food')) return '??';
+                if (desc.includes('insurance')) return '???';
+                if (desc.includes('maintenance') || desc.includes('repair')) return '??';
+                return '??';
             };
-
             // Get progress percentage
             const progressPercentage = (totalPaid / totalSplits) * 100;
-            
             billElement.innerHTML = `
                 <div class="bill-item-header">
                     <div class="bill-item-icon">${getBillIcon(bill.description)}</div>
@@ -2711,7 +2309,6 @@ class HouseholdManager {
                         </div>
                     </div>
                 </div>
-                
                 <div class="bill-progress-section">
                     <div class="bill-progress-header">
                         <span class="progress-label">Payment Progress</span>
@@ -2721,7 +2318,6 @@ class HouseholdManager {
                         <div class="bill-progress-fill" style="width: ${progressPercentage}%"></div>
                     </div>
                 </div>
-
                 <div class="bill-item-details">
                     <div class="bill-detail">
                         <i class="fas fa-user-circle bill-detail-icon"></i>
@@ -2745,7 +2341,6 @@ class HouseholdManager {
                     </div>
                 </div>
                 </div>
-                
                 <div class="bill-splits">
                     <div class="bill-splits-header">
                         <i class="fas fa-users"></i>
@@ -2776,7 +2371,6 @@ class HouseholdManager {
                     }).join('')}
                 </div>
                 </div>
-                
                 <div class="bill-item-actions">
                     ${bill.createdBy === this.userProfile.name ? `
                         <button class="btn btn-small btn-primary" onclick="app.editBill('${bill.id}')" title="Edit Bill">
@@ -2796,11 +2390,9 @@ class HouseholdManager {
                     ` : ''}
                 </div>
             `;
-            
             container.appendChild(billElement);
         });
     }
-
     saveBill() {
         const description = document.getElementById('bill-description').value;
         const amount = parseFloat(document.getElementById('bill-amount').value);
@@ -2808,14 +2400,11 @@ class HouseholdManager {
         const splitType = document.getElementById('bill-split-type').value;
         const dueDate = document.getElementById('bill-due-date').value;
         const editingBillId = document.getElementById('add-bill-modal').dataset.editingBillId;
-
         if (!description || !amount || !paidBy || !dueDate) {
             this.showNotification('Please fill in all required fields', 'error');
             return;
         }
-
         const splits = this.calculateBillSplits(amount, splitType);
-        
         if (editingBillId) {
             // Update existing bill
             const billIndex = this.bills.findIndex(b => b.id === editingBillId);
@@ -2848,19 +2437,15 @@ class HouseholdManager {
         this.bills.push(bill);
             this.showNotification('Bill added successfully!', 'success');
         }
-
         this.saveData('bills', this.bills);
         this.renderBills();
         this.closeModal('add-bill-modal');
-        
         // Reset form
         document.getElementById('add-bill-modal').dataset.editingBillId = '';
         document.getElementById('save-bill').textContent = 'Add Bill';
     }
-
     calculateBillSplits(amount, splitType) {
         const splits = [];
-        
         if (splitType === 'equal') {
             const perPerson = amount / this.roommates.length;
             this.roommates.forEach(roommate => {
@@ -2892,10 +2477,8 @@ class HouseholdManager {
                 });
             });
         }
-        
         return splits;
     }
-
     filterBills(status) {
         if (status === 'all') {
             this.filteredBills = null;
@@ -2905,7 +2488,6 @@ class HouseholdManager {
                 const totalSplits = bill.splits.length;
                 const isOverdue = new Date(bill.dueDate) < new Date() && totalPaid < totalSplits;
                 const isFullyPaid = totalPaid === totalSplits;
-                
                 switch (status) {
                     case 'active':
                         return !isFullyPaid && !isOverdue;
@@ -2920,7 +2502,6 @@ class HouseholdManager {
         }
         this.renderBills();
     }
-
     filterBillsByPeriod(period) {
         if (period === 'all') {
             this.filteredBills = null;
@@ -2932,10 +2513,8 @@ class HouseholdManager {
                 'may': 4, 'june': 5, 'july': 6, 'august': 7,
                 'september': 8, 'october': 9, 'november': 10, 'december': 11
             };
-            
             const targetMonth = monthNames[month];
             const targetYear = parseInt(year);
-            
             this.filteredBills = this.bills.filter(bill => {
                 const billDate = new Date(bill.dueDate);
                 return billDate.getMonth() === targetMonth && billDate.getFullYear() === targetYear;
@@ -2943,11 +2522,9 @@ class HouseholdManager {
         }
         this.renderBills();
     }
-
     searchBills() {
         this.renderBills();
     }
-
     markBillAsPaid(billId) {
         const bill = this.bills.find(b => b.id === billId);
         if (bill) {
@@ -2960,34 +2537,26 @@ class HouseholdManager {
             this.addNotification('Bill Marked as Paid', `${bill.description} has been marked as fully paid.`);
         }
     }
-
     editBill(billId) {
         const bill = this.bills.find(b => b.id === billId);
         if (!bill) return;
-
         // Pre-fill the form with existing bill data
         document.getElementById('bill-description').value = bill.description;
         document.getElementById('bill-amount').value = bill.amount;
         document.getElementById('bill-paid-by').value = bill.paidBy;
         document.getElementById('bill-split-type').value = bill.splitType;
         document.getElementById('bill-due-date').value = bill.dueDate;
-
         // Update split details based on type
         this.updateBillSplitType(bill.splitType);
-
         // Store the bill ID for updating
         document.getElementById('add-bill-modal').dataset.editingBillId = billId;
-
         // Change the save button text
         document.getElementById('save-bill').textContent = 'Update Bill';
-
         this.openModal('add-bill-modal');
     }
-
     settleUpBill(billId) {
         const bill = this.bills.find(b => b.id === billId);
         if (!bill) return;
-
         // Create a simple modal for settling up
         const modal = document.createElement('div');
         modal.className = 'modal active';
@@ -3017,10 +2586,8 @@ class HouseholdManager {
                 </div>
             </div>
         `;
-
         document.body.appendChild(modal);
     }
-
     toggleBillPayment(billId, userId, paid) {
         const bill = this.bills.find(b => b.id === billId);
         if (bill) {
@@ -3033,7 +2600,6 @@ class HouseholdManager {
             }
         }
     }
-
     deleteBill(billId) {
         if (confirm('Are you sure you want to delete this bill? This action cannot be undone.')) {
             this.bills = this.bills.filter(b => b.id !== billId);
@@ -3042,11 +2608,9 @@ class HouseholdManager {
             this.addNotification('Bill Deleted', 'The bill has been successfully deleted.');
         }
     }
-
     updateBillSplitType(splitType) {
         const splitDetails = document.getElementById('split-details');
         splitDetails.innerHTML = '';
-        
         if (splitType === 'percentage') {
             splitDetails.innerHTML = `
                 <h4>Percentage Split</h4>
@@ -3093,7 +2657,6 @@ class HouseholdManager {
             `;
         }
     }
-
     calculatePercentages() {
         const equalPercentage = Math.round(100 / this.roommates.length);
         this.roommates.forEach(roommate => {
@@ -3101,18 +2664,15 @@ class HouseholdManager {
             if (input) input.value = equalPercentage;
         });
     }
-
     calculateCustomSplit() {
         const totalAmount = parseFloat(document.getElementById('bill-amount').value) || 0;
         let totalEntered = 0;
-        
         this.roommates.forEach(roommate => {
             const input = document.getElementById(`custom-${roommate.id}`);
             if (input) {
                 totalEntered += parseFloat(input.value) || 0;
             }
         });
-        
         const remaining = totalAmount - totalEntered;
         if (remaining > 0) {
             this.showNotification(`Remaining amount: $${remaining.toFixed(2)}`, 'info');
@@ -3120,7 +2680,6 @@ class HouseholdManager {
             this.showNotification(`Over by: $${Math.abs(remaining).toFixed(2)}`, 'warning');
         }
     }
-
     removeSplitRow(roommateId, splitType) {
         const splitRow = document.querySelector(`[data-roommate-id="${roommateId}"]`);
         if (splitRow) {
@@ -3133,35 +2692,28 @@ class HouseholdManager {
             }
         }
     }
-
     // Events Management
     renderEvents() {
         const container = document.getElementById('events-list');
         container.innerHTML = '';
-
         const activeTab = document.querySelector('.event-tab.active').dataset.eventTab;
-        
         if (activeTab === 'upcoming') {
             this.renderUpcomingEvents(container);
         } else if (activeTab === 'polls') {
             this.renderPolls(container);
         }
     }
-
     renderUpcomingEvents(container) {
         if (this.events.length === 0) {
             container.innerHTML = '<p class="text-center">No upcoming events. Create an event to get started!</p>';
             return;
         }
-
         this.events.forEach(event => {
             const eventElement = document.createElement('div');
             eventElement.className = 'event-item';
-            
             const isCurrentUser = event.creator === this.settings.currentUserId;
             const creator = isCurrentUser ? this.userProfile.name : (this.roommates.find(r => r.id === event.creator)?.name || 'Unknown');
             const youIndicator = isCurrentUser ? ' (YOU)' : '';
-            
             eventElement.innerHTML = `
                 <div class="event-item-header">
                     <div class="event-item-title">${event.title}</div>
@@ -3169,30 +2721,25 @@ class HouseholdManager {
                 </div>
                 <div class="event-item-details">
                     <div class="event-item-description">${event.description}</div>
-                    <div class="event-item-location">📍 ${event.location}</div>
+                    <div class="event-item-location">?? ${event.location}</div>
                     <div class="event-item-creator">Created by ${creator}${youIndicator}</div>
                 </div>
             `;
-            
             container.appendChild(eventElement);
         });
     }
-
     renderPolls(container) {
         if (this.polls.length === 0) {
             container.innerHTML = '<p class="text-center">No active polls. Create a poll to get started!</p>';
             return;
         }
-
         this.polls.forEach(poll => {
             const pollElement = document.createElement('div');
             pollElement.className = 'poll-item';
-            
             const isCurrentUser = poll.creator === this.settings.currentUserId;
             const creator = isCurrentUser ? this.userProfile.name : (this.roommates.find(r => r.id === poll.creator)?.name || 'Unknown');
             const youIndicator = isCurrentUser ? ' (YOU)' : '';
             const totalVotes = poll.options.reduce((sum, option) => sum + option.votes, 0);
-            
             pollElement.innerHTML = `
                 <div class="poll-item-header">
                     <div class="poll-item-title">${poll.question}</div>
@@ -3211,12 +2758,9 @@ class HouseholdManager {
                     `).join('')}
                 </div>
             `;
-            
             container.appendChild(pollElement);
         });
     }
-
-
     saveEvent() {
         const title = document.getElementById('event-title').value;
         const description = document.getElementById('event-description').value;
@@ -3224,12 +2768,10 @@ class HouseholdManager {
         const time = document.getElementById('event-time').value;
         const location = document.getElementById('event-location').value;
         const creator = document.getElementById('event-creator').value;
-
         if (!title || !date || !creator) {
             this.showNotification('Please fill in all required fields', 'error');
             return;
         }
-
         const event = {
             id: Date.now().toString(),
             title,
@@ -3241,31 +2783,27 @@ class HouseholdManager {
             attendees: [creator],
             createdAt: new Date().toISOString()
         };
-
         this.events.push(event);
         this.saveData('events', this.events);
         this.renderEvents();
         this.closeModal('create-event-modal');
         this.showNotification('Event created successfully!', 'success');
     }
-
     updatePollType() {
         const pollType = document.getElementById('poll-type').value;
         const container = document.getElementById('poll-options-container');
-        
         container.innerHTML = '';
-        
         switch (pollType) {
             case 'multiple-choice':
                 container.innerHTML = `
                     <div class="poll-option-inputs">
                         <div class="poll-option-item">
                             <input type="text" class="poll-option-input" placeholder="Option 1" required>
-                            <button type="button" class="btn btn-small btn-danger" onclick="this.parentElement.remove()">×</button>
+                            <button type="button" class="btn btn-small btn-danger" onclick="this.parentElement.remove()">�</button>
                         </div>
                         <div class="poll-option-item">
                             <input type="text" class="poll-option-input" placeholder="Option 2" required>
-                            <button type="button" class="btn btn-small btn-danger" onclick="this.parentElement.remove()">×</button>
+                            <button type="button" class="btn btn-small btn-danger" onclick="this.parentElement.remove()">�</button>
                         </div>
                     </div>
                     <button type="button" class="btn btn-small btn-secondary" onclick="app.addPollOption()">
@@ -3273,7 +2811,6 @@ class HouseholdManager {
                     </button>
                 `;
                 break;
-                
             case 'yes-no':
                 container.innerHTML = `
                     <div class="poll-option-inputs">
@@ -3286,7 +2823,6 @@ class HouseholdManager {
                     </div>
                 `;
                 break;
-                
             case 'rating':
                 container.innerHTML = `
                     <div class="rating-options">
@@ -3313,7 +2849,6 @@ class HouseholdManager {
                     </div>
                 `;
                 break;
-                
             case 'ranking':
                 container.innerHTML = `
                     <div class="poll-option-inputs">
@@ -3331,7 +2866,6 @@ class HouseholdManager {
                     </button>
                 `;
                 break;
-                
             case 'date-picker':
                 container.innerHTML = `
                     <div class="date-options">
@@ -3350,7 +2884,6 @@ class HouseholdManager {
                     </div>
                 `;
                 break;
-                
             case 'time-picker':
                 container.innerHTML = `
                     <div class="time-options">
@@ -3363,35 +2896,28 @@ class HouseholdManager {
                 break;
         }
     }
-
     addPollOption() {
         const container = document.querySelector('.poll-option-inputs');
         const optionCount = container.children.length;
-        
         const optionDiv = document.createElement('div');
         optionDiv.className = 'poll-option-item';
         optionDiv.innerHTML = `
             <input type="text" class="poll-option-input" placeholder="Option ${optionCount + 1}" required>
-            <button type="button" class="btn btn-small btn-danger" onclick="this.parentElement.remove()">×</button>
+            <button type="button" class="btn btn-small btn-danger" onclick="this.parentElement.remove()">�</button>
         `;
-        
         container.appendChild(optionDiv);
     }
-
     savePoll() {
         const question = document.getElementById('poll-question').value;
         const description = document.getElementById('poll-description').value;
         const pollType = document.getElementById('poll-type').value;
         const expiryDate = document.getElementById('poll-expiry').value;
         const anonymous = document.getElementById('poll-anonymous').checked;
-
         if (!question) {
             this.showNotification('Please fill in the poll question', 'error');
             return;
         }
-
         let options = [];
-        
         switch (pollType) {
             case 'multiple-choice':
             case 'ranking':
@@ -3406,14 +2932,12 @@ class HouseholdManager {
                         order: pollType === 'ranking' ? index + 1 : null
                     }));
                 break;
-                
             case 'yes-no':
                 options = [
                     { text: 'Yes', votes: 0, voters: [] },
                     { text: 'No', votes: 0, voters: [] }
                 ];
                 break;
-                
             case 'rating':
                 options = [
                     { text: '1 Star', votes: 0, voters: [] },
@@ -3423,12 +2947,10 @@ class HouseholdManager {
                     { text: '5 Stars', votes: 0, voters: [] }
                 ];
                 break;
-                
             case 'date-picker':
                 const startDate = document.getElementById('poll-start-date').value;
                 const endDate = document.getElementById('poll-end-date').value;
                 const suggestedDates = document.getElementById('poll-suggested-dates').value;
-                
                 if (suggestedDates) {
                     options = suggestedDates.split('\n')
                         .filter(date => date.trim())
@@ -3442,7 +2964,6 @@ class HouseholdManager {
                     const start = new Date(startDate);
                     const end = new Date(endDate);
                     const dates = [];
-                    
                     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
                         dates.push({
                             text: d.toISOString().split('T')[0],
@@ -3453,7 +2974,6 @@ class HouseholdManager {
                     options = dates;
                 }
                 break;
-                
             case 'time-picker':
                 const suggestedTimes = document.getElementById('poll-suggested-times').value;
                 if (suggestedTimes) {
@@ -3467,12 +2987,10 @@ class HouseholdManager {
                 }
                 break;
         }
-
         if (options.length === 0) {
             this.showNotification('Please add at least one option', 'error');
             return;
         }
-
         const poll = {
             id: Date.now().toString(),
             question,
@@ -3485,31 +3003,25 @@ class HouseholdManager {
             status: 'active',
             createdAt: new Date().toISOString()
         };
-
         this.polls.push(poll);
         this.saveData('polls', this.polls);
         this.renderEvents();
         this.closeModal('create-poll-modal');
         this.showNotification('Poll created successfully!', 'success');
     }
-
     switchEventTab(tabName) {
         document.querySelectorAll('.event-tab').forEach(tab => tab.classList.remove('active'));
         document.querySelector(`[data-event-tab="${tabName}"]`).classList.add('active');
         this.renderEvents();
     }
-
     voteOnPoll(pollId, optionText) {
         const poll = this.polls.find(p => p.id === pollId);
         if (!poll) return;
-
         const option = poll.options.find(o => o.text === optionText);
         if (!option) return;
-
         // Check if user already voted
         const currentUser = this.settings.currentUserId;
         const hasVoted = option.voters.includes(currentUser);
-        
         if (hasVoted) {
             // Remove vote
             option.votes--;
@@ -3519,35 +3031,27 @@ class HouseholdManager {
             option.votes++;
             option.voters.push(currentUser);
         }
-
         this.saveData('polls', this.polls);
         this.renderEvents();
     }
-
-
     // Chat Functions
     toggleChatPanel() {
         const chatPanel = document.getElementById('chat-panel');
         chatPanel.classList.toggle('active');
-        
         if (chatPanel.classList.contains('active')) {
             this.renderChatMessages();
             this.unreadChatCount = 0;
             this.updateChatBadge();
         }
     }
-
     closeChatPanel() {
         const chatPanel = document.getElementById('chat-panel');
         chatPanel.classList.remove('active');
     }
-
     sendChatMessage() {
         const input = document.getElementById('chat-input');
         const message = input.value.trim();
-        
         if (!message) return;
-
         const newMessage = {
             id: Date.now().toString(),
             sender: this.userProfile.name,
@@ -3555,20 +3059,16 @@ class HouseholdManager {
             timestamp: new Date(),
             isOwn: true
         };
-
         this.chatMessages.push(newMessage);
         this.saveData('chatMessages', this.chatMessages);
         this.renderChatMessages();
-        
         input.value = '';
         this.scrollToBottom();
-        
         // Simulate other users receiving the message
         setTimeout(() => {
             this.simulateOtherUserResponse(message);
         }, 1000 + Math.random() * 2000);
     }
-
     simulateOtherUserResponse(originalMessage) {
         const responses = [
             "Got it!",
@@ -3578,17 +3078,14 @@ class HouseholdManager {
             "On it!",
             "Will do",
             "Perfect",
-            "👍",
+            "??",
             "Sure thing",
             "No problem"
         ];
-        
         const randomResponse = responses[Math.floor(Math.random() * responses.length)];
         const otherUsers = this.roommates.filter(roommate => roommate.name !== this.userProfile.name);
-        
         if (otherUsers.length > 0) {
             const randomUser = otherUsers[Math.floor(Math.random() * otherUsers.length)];
-            
             const responseMessage = {
                 id: Date.now().toString(),
                 sender: randomUser.name,
@@ -3596,10 +3093,8 @@ class HouseholdManager {
                 timestamp: new Date(),
                 isOwn: false
             };
-
             this.chatMessages.push(responseMessage);
             this.saveData('chatMessages', this.chatMessages);
-            
             if (!document.getElementById('chat-panel').classList.contains('active')) {
                 this.unreadChatCount++;
                 this.updateChatBadge();
@@ -3609,17 +3104,13 @@ class HouseholdManager {
             }
         }
     }
-
     renderChatMessages() {
         const messagesContainer = document.getElementById('chat-messages');
-        
         if (!messagesContainer) {
             console.error('Chat messages container not found!');
             return;
         }
-        
         messagesContainer.innerHTML = '';
-
         if (this.chatMessages.length === 0) {
             messagesContainer.innerHTML = `
                 <div class="chat-welcome">
@@ -3629,16 +3120,13 @@ class HouseholdManager {
             `;
             return;
         }
-
         this.chatMessages.forEach(message => {
             const messageElement = document.createElement('div');
             messageElement.className = `chat-message ${message.isOwn ? 'own' : 'other'}`;
-            
             const timeString = message.timestamp.toLocaleTimeString([], { 
                 hour: '2-digit', 
                 minute: '2-digit' 
             });
-            
             const senderDisplay = message.isOwn ? message.sender + ' (YOU)' : message.sender;
             messageElement.innerHTML = `
                 <div class="message-bubble">${this.escapeHtml(message.message)}</div>
@@ -3647,18 +3135,14 @@ class HouseholdManager {
                     <span class="message-time">${timeString}</span>
                 </div>
             `;
-            
             messagesContainer.appendChild(messageElement);
         });
-        
         this.scrollToBottom();
     }
-
     scrollToBottom() {
         const messagesContainer = document.getElementById('chat-messages');
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
-
     updateChatBadge() {
         const badge = document.getElementById('chat-badge');
         if (this.unreadChatCount > 0) {
@@ -3668,28 +3152,23 @@ class HouseholdManager {
             badge.style.display = 'none';
         }
     }
-
     escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     }
-
     searchChatMessages() {
         const searchTerm = document.getElementById('chat-search').value.toLowerCase().trim();
         if (!searchTerm) {
             this.renderChatMessages();
             return;
         }
-
         const messagesContainer = document.getElementById('chat-messages');
         messagesContainer.innerHTML = '';
-
         const filteredMessages = this.chatMessages.filter(message => 
             message.message.toLowerCase().includes(searchTerm) ||
             message.sender.toLowerCase().includes(searchTerm)
         );
-
         if (filteredMessages.length === 0) {
             messagesContainer.innerHTML = `
                 <div class="chat-welcome">
@@ -3699,19 +3178,15 @@ class HouseholdManager {
             `;
             return;
         }
-
         filteredMessages.forEach(message => {
             const messageElement = document.createElement('div');
             messageElement.className = `chat-message ${message.isOwn ? 'own' : 'other'}`;
-            
             const timeString = message.timestamp.toLocaleTimeString([], { 
                 hour: '2-digit', 
                 minute: '2-digit' 
             });
-            
             // Highlight search terms
             const highlightedMessage = this.highlightSearchTerm(message.message, searchTerm);
-            
             const senderDisplay = message.isOwn ? message.sender + ' (YOU)' : message.sender;
             messageElement.innerHTML = `
                 <div class="message-bubble">${highlightedMessage}</div>
@@ -3720,94 +3195,75 @@ class HouseholdManager {
                     <span class="message-time">${timeString}</span>
                 </div>
             `;
-            
             messagesContainer.appendChild(messageElement);
         });
-        
         this.scrollToBottom();
     }
-
     highlightSearchTerm(text, searchTerm) {
         if (!searchTerm) return this.escapeHtml(text);
-        
         const regex = new RegExp(`(${searchTerm})`, 'gi');
         const highlightedText = text.replace(regex, '<mark class="search-highlight">$1</mark>');
         return highlightedText;
     }
-
     // Profile Photo Upload Functions
     handlePhotoUpload(event) {
         const file = event.target.files[0];
         if (!file) return;
-
         if (!file.type.startsWith('image/')) {
             this.showNotification('Please select an image file', 'error');
             return;
         }
-
         const reader = new FileReader();
         reader.onload = (e) => {
             const previewImg = document.getElementById('preview-img');
             const photoPreview = document.getElementById('photo-preview');
             const uploadPlaceholder = document.querySelector('.upload-placeholder');
-            
             previewImg.src = e.target.result;
             photoPreview.style.display = 'block';
             uploadPlaceholder.style.display = 'none';
         };
         reader.readAsDataURL(file);
     }
-
     removePhoto() {
         const photoPreview = document.getElementById('photo-preview');
         const uploadPlaceholder = document.querySelector('.upload-placeholder');
         const photoInput = document.getElementById('photo-input');
-        
         photoPreview.style.display = 'none';
         uploadPlaceholder.style.display = 'flex';
         photoInput.value = '';
     }
-
     async saveProfile() {
         const name = document.getElementById('profile-name-input').value;
         const email = document.getElementById('profile-email-input').value;
         const color = document.getElementById('profile-color-input').value;
         const photoInput = document.getElementById('photo-input');
-        
         if (!name || !email) {
             this.showNotification('Please fill in all required fields', 'error');
             return;
         }
-
         // Update user profile (independent of roommates)
         this.userProfile.name = name;
         this.userProfile.email = email;
         this.userProfile.color = color;
-        
         // Handle photo upload with Firebase Storage
             if (photoInput.files[0]) {
             try {
                 const file = photoInput.files[0];
                 const fileName = `profile-${this.currentUser?.uid || 'default'}-${Date.now()}.${file.name.split('.').pop()}`;
                 const storageRef = this.firebase.ref(this.firebase.storage, `profile-pictures/${fileName}`);
-                
                 // Show loading
                 this.showNotification('Uploading profile picture...', 'info');
-                
                 // Upload to Firebase Storage
                 const snapshot = await this.firebase.uploadBytes(storageRef, file);
                 const downloadURL = await this.firebase.getDownloadURL(snapshot.ref);
-                
                 this.userProfile.avatar = downloadURL;
                 this.userProfile.avatarPath = `profile-pictures/${fileName}`;
-                
                 // Log analytics event
                 this.firebase.logEvent(this.firebase.analytics, 'profile_picture_uploaded', {
                     user_id: this.currentUser?.uid,
                     file_size: file.size,
                     file_type: file.type
                 });
-                
                 this.updateProfileDisplay();
                 await this.saveData('userProfile', this.userProfile);
                 this.showNotification('Profile updated successfully!', 'success');
@@ -3828,7 +3284,6 @@ class HouseholdManager {
             await this.saveData('userProfile', this.userProfile);
                 this.updateProfileDisplay();
         }
-        
         // Also update the current user's name and color in roommates list
         const currentUser = this.roommates.find(r => r.id === this.settings.currentUserId);
         if (currentUser) {
@@ -3836,38 +3291,30 @@ class HouseholdManager {
             currentUser.color = color;
             await this.saveData('roommates', this.roommates);
         }
-        
         // Log analytics event
         this.firebase.logEvent(this.firebase.analytics, 'profile_updated', {
             user_id: this.currentUser?.uid,
             has_avatar: !!this.userProfile.avatar
         });
-        
         this.renderRoommates(); // Refresh roommates display
         this.closeModal('profile-photo-modal');
         this.showNotification('Profile updated successfully!', 'success');
     }
-
     openProfileModal() {
         // Pre-fill the profile modal with current user data
         document.getElementById('profile-name-input').value = this.userProfile.name;
         document.getElementById('profile-email-input').value = this.userProfile.email;
         document.getElementById('profile-color-input').value = this.userProfile.color || '#1a73e8';
-        
         // Clear any existing photo selection
         document.getElementById('photo-input').value = '';
-        
         this.openModal('profile-photo-modal');
     }
-
     updateProfileDisplay() {
         const profileName = document.getElementById('profile-name');
         const profileImg = document.getElementById('profile-img');
         const avatarPlaceholder = document.getElementById('avatar-placeholder');
         const profileContainer = document.querySelector('.profile-info');
-
         profileName.textContent = this.userProfile.name;
-
         if (this.userProfile.avatar && this.userProfile.avatar.startsWith('data:')) {
             profileImg.src = this.userProfile.avatar;
             profileImg.style.display = 'block';
@@ -3875,9 +3322,8 @@ class HouseholdManager {
         } else {
             profileImg.style.display = 'none';
             avatarPlaceholder.style.display = 'block';
-            avatarPlaceholder.textContent = this.userProfile.avatar || '👤';
+            avatarPlaceholder.textContent = this.userProfile.avatar || '??';
         }
-        
         // Update profile container with user's color
         if (profileContainer) {
             const userColor = this.userProfile.color || '#1a73e8';
@@ -3886,23 +3332,19 @@ class HouseholdManager {
             profileContainer.style.borderRadius = '8px';
             profileContainer.style.padding = '12px';
         }
-        
         // Update personal schedule title
         this.updatePersonalScheduleTitle();
     }
-    
     updatePersonalScheduleTitle() {
         const titleElement = document.getElementById('personal-schedule-title');
         if (titleElement) {
             titleElement.textContent = `${this.userProfile.name}'s Schedule`;
         }
     }
-
     // Enhanced Roommate Rendering with Photos
     renderRoommates() {
         const container = document.getElementById('roommates-list');
         container.innerHTML = '';
-
         // Create a combined list with current user first, then other roommates
         let currentUser;
         if (this.isGuest) {
@@ -3928,21 +3370,16 @@ class HouseholdManager {
                 isGuest: false
             };
         }
-
         const allRoommates = [currentUser, ...this.roommates.filter(r => r.id !== this.settings.currentUserId)];
-
         if (allRoommates.length === 0) {
             container.innerHTML = '<p class="text-center">No roommates added yet. Add some roommates to get started!</p>';
             return;
         }
-
         allRoommates.forEach(roommate => {
             const roommateElement = document.createElement('div');
             roommateElement.className = 'roommate-card';
-            
             const preferences = this.roommatePreferences[roommate.id] || {};
             const stats = this.calculateRoommateStats(roommate.id);
-            
             roommateElement.innerHTML = `
                 <div class="roommate-card-header" style="background-color: ${roommate.color}; color: #202124; border-radius: 8px 8px 0 0; padding: 16px;">
                     <div class="roommate-avatar" onclick="app.openRoommateProfile('${roommate.id}')">
@@ -3979,56 +3416,45 @@ class HouseholdManager {
                     </div>
                 </div>
             `;
-            
             container.appendChild(roommateElement);
         });
     }
-
     calculateRoommateStats(roommateId) {
         const choresCompleted = this.choreCompletions.filter(c => c.userId === roommateId).length;
         const billsPaid = this.bills.reduce((count, bill) => {
             return count + bill.splits.filter(s => s.userId === roommateId && s.paid).length;
         }, 0);
-        
         return {
             choresCompleted,
             billsPaid
         };
     }
-
     openRoommateProfile(roommateId) {
         const isCurrentUser = roommateId === this.settings.currentUserId;
-        
         if (isCurrentUser) {
             // For current user, use the regular profile modal
             document.getElementById('profile-name-input').value = this.userProfile.name;
             document.getElementById('profile-email-input').value = this.userProfile.email;
             document.getElementById('profile-color-input').value = this.userProfile.color || '#1a73e8';
-            
             // Clear any existing photo selection
             document.getElementById('photo-input').value = '';
-        
         this.openModal('profile-photo-modal');
         } else {
             // For other roommates, find them in the roommates list
         const roommate = this.roommates.find(r => r.id === roommateId);
         if (!roommate) return;
-
             // Store the roommate being edited
             this.currentEditingRoommateId = roommateId;
-            
             // Create a separate edit modal
             this.createRoommateEditModal(roommate);
         }
     }
-
     createRoommateEditModal(roommate) {
         // Remove existing modal if it exists
         const existingModal = document.getElementById('roommate-edit-modal');
         if (existingModal) {
             existingModal.remove();
         }
-
         // Create the modal
         const modal = document.createElement('div');
         modal.id = 'roommate-edit-modal';
@@ -4071,27 +3497,21 @@ class HouseholdManager {
                 </div>
             </div>
         `;
-
         document.body.appendChild(modal);
     }
-
     saveRoommateEdit() {
         const roommateId = this.currentEditingRoommateId;
         const roommate = this.roommates.find(r => r.id === roommateId);
         if (!roommate) return;
-
         const email = document.getElementById('roommate-edit-email').value;
         const color = document.getElementById('roommate-edit-color').value;
-
         if (!email) {
             this.showNotification('Email is required', 'error');
             return;
         }
-
         // Update roommate information
         roommate.email = email;
         roommate.color = color;
-
         this.saveData('roommates', this.roommates);
         this.renderRoommates();
         this.renderCalendar();
@@ -4100,23 +3520,18 @@ class HouseholdManager {
         this.closeModal('roommate-edit-modal');
         this.showNotification('Roommate information updated successfully!', 'success');
     }
-
-
     // Enhanced Notifications System
     showNotificationsPanel() {
         const unreadNotifications = this.notifications.filter(n => !n.read);
         const readNotifications = this.notifications.filter(n => n.read);
-        
         // Create notifications dropdown
         let existingPanel = document.getElementById('notifications-panel');
         if (existingPanel) {
             existingPanel.remove();
         }
-
         const panel = document.createElement('div');
         panel.id = 'notifications-panel';
         panel.className = 'notifications-panel';
-        
         panel.innerHTML = `
             <div class="notifications-header">
                 <h3>Notifications</h3>
@@ -4138,32 +3553,26 @@ class HouseholdManager {
                 ${this.renderNotificationsContent(unreadNotifications)}
             </div>
         `;
-
         // Add close button functionality
         panel.querySelector('#close-notifications-btn').addEventListener('click', () => {
             this.closeNotificationsPanel();
         });
-
         // Add tab switching functionality
         panel.querySelectorAll('.notification-tab').forEach(tab => {
             tab.addEventListener('click', (e) => {
                 const tabType = e.target.dataset.tab;
                 const content = panel.querySelector('#notifications-content');
-                
                 // Update active tab
                 panel.querySelectorAll('.notification-tab').forEach(t => t.classList.remove('active'));
                 e.target.classList.add('active');
-                
                 // Get fresh notification data
                 const currentUnreadNotifications = this.notifications.filter(n => !n.read);
                 const currentReadNotifications = this.notifications.filter(n => n.read);
-                
                 // Update tab counts
                 const currentTab = panel.querySelector('[data-tab="current"]');
                 const pastTab = panel.querySelector('[data-tab="past"]');
                 currentTab.textContent = `Current (${currentUnreadNotifications.length})`;
                 pastTab.textContent = `Past (${currentReadNotifications.length})`;
-                
                 // Update content
                 if (tabType === 'current') {
                     content.innerHTML = this.renderNotificationsContent(currentUnreadNotifications);
@@ -4172,16 +3581,13 @@ class HouseholdManager {
                 }
             });
         });
-
         // Add bulk action functionality
         panel.querySelector('#mark-all-read-btn').addEventListener('click', () => {
             this.markAllAsRead();
         });
-
         panel.querySelector('#delete-all-btn').addEventListener('click', () => {
             this.deleteAllNotifications();
         });
-
         // Position the panel
         const button = document.getElementById('notifications-btn');
         const rect = button.getBoundingClientRect();
@@ -4189,9 +3595,7 @@ class HouseholdManager {
         panel.style.top = (rect.bottom + 8) + 'px';
         panel.style.right = '24px';
         panel.style.zIndex = '1000';
-
         document.body.appendChild(panel);
-
         // Close panel when clicking outside
         setTimeout(() => {
             const closeHandler = (e) => {
@@ -4203,7 +3607,6 @@ class HouseholdManager {
             document.addEventListener('click', closeHandler);
         }, 100);
     }
-
     renderNotificationsContent(notifications) {
         if (notifications.length === 0) {
             return `
@@ -4214,7 +3617,6 @@ class HouseholdManager {
                 </div>
             `;
         }
-
         return notifications.map(notification => `
             <div class="notification-item ${notification.read ? 'read' : 'unread'}">
                 <div class="notification-icon">
@@ -4238,18 +3640,15 @@ class HouseholdManager {
             </div>
         `).join('');
     }
-
     closeNotificationsPanel() {
         const panel = document.getElementById('notifications-panel');
         if (panel) {
             panel.remove();
         }
     }
-
     getNotifications() {
         return this.notifications.filter(n => !n.read).slice(0, 10);
     }
-
     addNotification(title, message, icon = 'fa-bell', type = 'info') {
         const notification = {
             id: Date.now().toString(),
@@ -4260,22 +3659,18 @@ class HouseholdManager {
             read: false,
             createdAt: new Date().toISOString()
         };
-
         this.notifications.unshift(notification);
         this.saveData('notifications', this.notifications);
         this.updateNotificationBadge();
     }
-
     markAsRead(notificationId) {
         const notification = this.notifications.find(n => n.id === notificationId);
         if (notification) {
             notification.read = true;
             this.saveData('notifications', this.notifications);
             this.updateNotificationBadge();
-            
             // Refresh the panel content without closing it
             this.refreshNotificationsPanel();
-            
             // Automatically switch to Past tab to show the read notification
             setTimeout(() => {
                 const pastTab = document.querySelector('[data-tab="past"]');
@@ -4283,114 +3678,91 @@ class HouseholdManager {
                     pastTab.click();
                 }
             }, 100);
-            
             // Show success message
             this.showNotification('Notification marked as read', 'success');
         }
     }
-
     updateNotificationBadge() {
         const unreadCount = this.notifications.filter(n => !n.read).length;
         const badge = document.getElementById('notification-count');
         badge.textContent = unreadCount;
         badge.style.display = unreadCount > 0 ? 'block' : 'none';
     }
-
     deleteNotification(notificationId) {
         if (confirm('Are you sure you want to delete this notification?')) {
             this.notifications = this.notifications.filter(n => n.id !== notificationId);
             this.saveData('notifications', this.notifications);
             this.updateNotificationBadge();
-            
             // Refresh the panel content without closing it
             this.refreshNotificationsPanel();
-            
             // Show success message
             this.showNotification('Notification deleted', 'success');
         }
     }
-
     markAllAsRead() {
         const unreadNotifications = this.notifications.filter(n => !n.read);
         if (unreadNotifications.length === 0) {
             this.showNotification('No unread notifications to mark', 'info');
             return;
         }
-
         if (confirm(`Are you sure you want to mark all ${unreadNotifications.length} notifications as read?`)) {
             unreadNotifications.forEach(notification => {
                 notification.read = true;
             });
-            
             this.saveData('notifications', this.notifications);
             this.updateNotificationBadge();
-            
             // Refresh the panel content without closing it
             this.refreshNotificationsPanel();
-            
             this.showNotification(`Marked ${unreadNotifications.length} notifications as read`, 'success');
         }
     }
-
     deleteAllNotifications() {
         if (this.notifications.length === 0) {
             this.showNotification('No notifications to delete', 'info');
             return;
         }
-
         if (confirm(`Are you sure you want to delete all ${this.notifications.length} notifications?`)) {
             this.notifications = [];
             this.saveData('notifications', this.notifications);
             this.updateNotificationBadge();
-            
             // Refresh the panel content without closing it
             this.refreshNotificationsPanel();
-            
             this.showNotification('All notifications deleted', 'success');
         }
     }
-
     refreshNotificationsPanel() {
         const panel = document.getElementById('notifications-panel');
         if (!panel) return;
-
         const unreadNotifications = this.notifications.filter(n => !n.read);
         const readNotifications = this.notifications.filter(n => n.read);
-        
         // Update tab counts
         const currentTab = panel.querySelector('[data-tab="current"]');
         const pastTab = panel.querySelector('[data-tab="past"]');
         currentTab.textContent = `Current (${unreadNotifications.length})`;
         pastTab.textContent = `Past (${readNotifications.length})`;
-        
         // Update bulk action buttons
         const markAllBtn = panel.querySelector('#mark-all-read-btn');
         const deleteAllBtn = panel.querySelector('#delete-all-btn');
         markAllBtn.disabled = unreadNotifications.length === 0;
         deleteAllBtn.disabled = this.notifications.length === 0;
-        
         // Update content based on active tab
         const activeTab = panel.querySelector('.notification-tab.active');
         const content = panel.querySelector('#notifications-content');
-        
         if (activeTab.dataset.tab === 'current') {
             content.innerHTML = this.renderNotificationsContent(unreadNotifications);
         } else {
             content.innerHTML = this.renderNotificationsContent(readNotifications);
         }
     }
-
     formatTimeAgo(dateString) {
         const date = new Date(dateString);
         const now = new Date();
         const diffInMinutes = Math.floor((now - date) / (1000 * 60));
-        
         if (diffInMinutes < 1) return 'Just now';
         if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
         if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
         return `${Math.floor(diffInMinutes / 1440)}d ago`;
     }
-
     // Initialize sample notifications
     initializeSampleNotifications() {
         if (this.notifications.length === 0) {
@@ -4414,13 +3786,11 @@ class HouseholdManager {
             );
         }
     }
-
     // Check for upcoming chores and send notifications
     checkUpcomingChores() {
         const today = new Date();
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
-        
         // Check for chores due today
         this.chores.forEach(chore => {
             if (this.isChoreDueToday(chore)) {
@@ -4435,7 +3805,6 @@ class HouseholdManager {
                 }
             }
         });
-        
         // Check for chores due tomorrow
         this.chores.forEach(chore => {
             if (this.isChoreDueTomorrow(chore)) {
@@ -4451,7 +3820,6 @@ class HouseholdManager {
             }
         });
     }
-
     isChoreDueToday(chore) {
         const today = new Date();
         switch (chore.frequency) {
@@ -4467,7 +3835,6 @@ class HouseholdManager {
                 return false;
         }
     }
-
     isChoreDueTomorrow(chore) {
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
@@ -4484,7 +3851,6 @@ class HouseholdManager {
                 return false;
         }
     }
-
     // Firebase Integration Methods
     async initFirebase() {
         // Wait for Firebase to be available
@@ -4493,17 +3859,13 @@ class HouseholdManager {
             await new Promise(resolve => setTimeout(resolve, 100));
             attempts++;
         }
-
         if (!this.firebase) {
             console.error('Firebase not loaded after 5 seconds');
             return;
         }
-
         console.log('Firebase initialized successfully');
-
         // Initialize push notifications
         this.initPushNotifications();
-
         // Listen for authentication state changes
         this.firebase.onAuthStateChanged(this.firebase.auth, (user) => {
             console.log('Auth state changed:', user ? 'User signed in' : 'User signed out');
@@ -4513,7 +3875,6 @@ class HouseholdManager {
                 this.loadUserData();
                 this.hideLoginModal();
                 this.hideAuthScreen(); // Hide mandatory auth screen
-                
                 // Log user sign in
                 this.firebase.logEvent(this.firebase.analytics, 'login', {
                     method: 'google'
@@ -4525,19 +3886,16 @@ class HouseholdManager {
             }
         });
     }
-
     async initPushNotifications() {
         try {
             // Request notification permission
             const permission = await Notification.requestPermission();
             if (permission === 'granted') {
                 console.log('Notification permission granted');
-                
                 // Get FCM token
                 const token = await this.firebase.getToken(this.firebase.messaging, {
                     vapidKey: 'YOUR_VAPID_KEY' // You'll need to generate this in Firebase Console
                 });
-                
                 if (token) {
                     console.log('FCM Token:', token);
                     // Save token to user's document in Firestore
@@ -4549,7 +3907,6 @@ class HouseholdManager {
                         );
                     }
                 }
-                
                 // Listen for foreground messages
                 this.firebase.onMessage(this.firebase.messaging, (payload) => {
                     console.log('Message received:', payload);
@@ -4562,35 +3919,26 @@ class HouseholdManager {
             console.error('Error initializing push notifications:', error);
         }
     }
-
     async loadUserData() {
         if (!this.currentUser) return;
-
         try {
             console.log('Loading user data for:', this.currentUser.uid);
-            
             // Load user's household ID
             const userDoc = await this.firebase.getDoc(this.firebase.doc(this.firebase.db, 'users', this.currentUser.uid));
             if (userDoc.exists()) {
                 const userData = userDoc.data();
                 this.householdId = userData.householdId;
                 this.userProfile = userData.profile || this.userProfile;
-                
                 console.log('User household ID:', this.householdId);
-                
                 // Save user data locally for persistence
                 this.saveData('userProfile', this.userProfile);
                 this.saveData('householdId', this.householdId);
-                
                 // Load household data
                 await this.loadHouseholdData();
-                
                 // Sync any pending data
                 await this.syncPendingData();
-                
                 // Auto-save all data for persistence
                 await this.autoSaveAllData();
-                
                 // Log analytics event
                 this.firebase.logEvent(this.firebase.analytics, 'user_data_loaded', {
                     user_id: this.currentUser.uid,
@@ -4608,7 +3956,6 @@ class HouseholdManager {
                         createdAt: new Date().toISOString()
                     }
                 );
-                
                 // Save locally
                 this.saveData('userProfile', this.userProfile);
             }
@@ -4617,78 +3964,61 @@ class HouseholdManager {
             this.showNotification('Error loading user data. Please try again.', 'error');
         }
     }
-
     async loadHouseholdData() {
         if (!this.householdId) {
             console.log('No household ID, skipping real-time listeners');
             return;
         }
-
         console.log('Setting up real-time listeners for household:', this.householdId);
-
         try {
             // Initialize Realtime Database manager
             this.initRealtimeDatabase();
-            
             // Set up real-time listeners using Realtime Database
             this.realtimeDB.setupRealtimeListeners(this.householdId, this);
-
             console.log('All real-time listeners set up successfully');
-
         } catch (error) {
             console.error('Error loading household data:', error);
         }
     }
-
     async saveToFirebase(path, data) {
         if (!this.householdId || !this.firebase) return;
-
         try {
             const fullPath = `households/${this.householdId}/${path}`;
             const dataRef = this.firebase.ref(this.firebase.database, fullPath);
-            
             // Add timestamp and user info
             const dataWithMeta = {
                 ...data,
                 updatedAt: new Date().toISOString(),
                 updatedBy: this.currentUser.uid
             };
-            
             await this.firebase.set(dataRef, dataWithMeta);
             console.log('Successfully saved to Realtime Database:', fullPath);
         } catch (error) {
             console.error('Error saving to Firebase Realtime Database:', error);
         }
     }
-
     // Initialize Realtime Database manager
     initRealtimeDatabase() {
         if (!this.realtimeDB) {
             this.realtimeDB = new RealtimeDatabaseManager(this.firebase);
         }
     }
-
     // Set up mandatory authentication screen
     setupMandatoryAuth() {
         console.log('Setting up mandatory authentication');
-        
         // Show auth screen by default
         this.showAuthScreen();
-        
         // Set up event listeners for auth options - use setTimeout to ensure DOM is ready
         setTimeout(() => {
             const googleBtn = document.getElementById('google-auth-btn');
             const guestBtn = document.getElementById('guest-auth-btn');
-            
             console.log('Setting up auth button listeners:', { googleBtn, guestBtn });
-            
             if (googleBtn) {
                 googleBtn.addEventListener('click', () => {
                     console.log('Google auth button clicked');
                     this.handleGoogleAuth();
                 });
             }
-            
             if (guestBtn) {
                 guestBtn.addEventListener('click', () => {
                     console.log('Guest auth button clicked');
@@ -4696,7 +4026,6 @@ class HouseholdManager {
                 });
             }
         }, 100);
-        
         // Also set up event delegation as fallback
         document.addEventListener('click', (e) => {
             if (e.target && e.target.id === 'google-auth-btn') {
@@ -4708,54 +4037,44 @@ class HouseholdManager {
             }
         });
     }
-
     // Show authentication screen
     showAuthScreen() {
         const authScreen = document.getElementById('auth-screen');
         const appContainer = document.getElementById('app-container');
-        
         if (authScreen) {
             authScreen.style.display = 'flex';
         }
-        
         if (appContainer) {
             appContainer.style.display = 'none';
         }
     }
-
     // Hide authentication screen and show app
     hideAuthScreen() {
         const authScreen = document.getElementById('auth-screen');
         const appContainer = document.getElementById('app-container');
-        
         if (authScreen) {
             authScreen.style.display = 'none';
         }
-        
         if (appContainer) {
             appContainer.style.display = 'flex';
         }
     }
-
     // Handle Google authentication
     async handleGoogleAuth() {
         try {
             console.log('Starting Google authentication');
-            
             // Check if Firebase is available
             if (!this.firebase || !this.firebase.auth) {
                 console.error('Firebase authentication not available');
                 this.showNotification('Firebase authentication not configured. Please use Guest mode.', 'error');
                 return;
             }
-            
             await this.signInWithGoogle();
         } catch (error) {
             console.error('Google authentication failed:', error);
             this.showNotification('Google sign-in failed. Please use Guest mode instead.', 'error');
         }
     }
-
     // Handle guest authentication
     handleGuestAuth() {
         console.log('User chose guest mode');
@@ -4766,7 +4085,6 @@ class HouseholdManager {
             email: 'guest@example.com',
             photoURL: null
         };
-        
         // Set up guest profile
         this.userProfile = {
             name: 'Guest User',
@@ -4774,28 +4092,20 @@ class HouseholdManager {
             avatar: null,
             color: this.generateRandomColor()
         };
-        
         // Save guest profile
         this.saveData('userProfile', this.userProfile);
-        
         // Hide auth screen and show app
         this.hideAuthScreen();
-        
         // Update profile display
         this.updateProfileDisplay();
-        
         // Update roommates display
         this.renderRoommates();
-        
         // Show guest notification
         this.showNotification('Welcome! You are using guest mode. Data will be saved locally but won\'t sync across devices.', 'info');
-        
         console.log('Guest authentication completed');
     }
-
     async deleteFromFirebase(path) {
         if (!this.householdId) return;
-
         try {
             const fullPath = `households/${this.householdId}/${path}`;
             const dataRef = this.firebase.ref(this.firebase.database, fullPath);
@@ -4805,7 +4115,6 @@ class HouseholdManager {
             console.error('Error deleting from Firebase Realtime Database:', error);
         }
     }
-
     showLoginModal() {
         const modal = document.getElementById('login-modal');
         if (modal) {
@@ -4815,7 +4124,6 @@ class HouseholdManager {
             console.error('Login modal not found');
         }
     }
-
     hideLoginModal() {
         const modal = document.getElementById('login-modal');
         if (modal) {
@@ -4823,64 +4131,50 @@ class HouseholdManager {
             console.log('Login modal hidden');
         }
     }
-
     async signIn(email, password) {
         try {
             console.log('Attempting sign in...');
             const userCredential = await this.firebase.signInWithEmailAndPassword(this.firebase.auth, email, password);
             console.log('Sign in successful:', userCredential.user);
-            
             // Log analytics event
             this.firebase.logEvent(this.firebase.analytics, 'login', {
                 method: 'email',
                 user_id: userCredential.user.uid
             });
-            
             this.showNotification('Signed in successfully!', 'success');
         } catch (error) {
             console.error('Sign in error:', error);
-            
             // Log failed login attempt
             this.firebase.logEvent(this.firebase.analytics, 'login_failed', {
                 method: 'email',
                 error_code: error.code
             });
-            
             this.showNotification('Sign in failed: ' + error.message, 'error');
         }
     }
-
     async signInWithGoogle() {
         try {
             console.log('Attempting Google sign in...');
-            
             // Check if Firebase is properly configured
             if (!this.firebase || !this.firebase.auth || !this.firebase.GoogleAuthProvider) {
                 throw new Error('Firebase authentication not properly configured');
             }
-            
             const provider = new this.firebase.GoogleAuthProvider();
             const result = await this.firebase.signInWithPopup(this.firebase.auth, provider);
             const user = result.user;
-            
             console.log('Google sign in successful:', user);
-            
             // Check if user already exists
             const userDoc = await this.firebase.getDoc(this.firebase.doc(this.firebase.db, 'users', user.uid));
-            
             if (userDoc.exists()) {
                 // Existing user - load their data
                 const userData = userDoc.data();
                 this.householdId = userData.householdId;
                 this.userProfile = userData.profile || this.userProfile;
-                
                 // Save user data locally for persistence
                 this.saveData('userProfile', this.userProfile);
                 this.saveData('householdId', this.householdId);
-                
                 // Load household data
                 await this.loadHouseholdData();
-                
                 this.showNotification('Welcome back!', 'success');
             } else {
                 // New user - show household code modal
@@ -4888,37 +4182,29 @@ class HouseholdManager {
                 this.userProfile.email = user.email;
                 this.userProfile.avatar = user.photoURL;
                 this.userProfile.color = this.generateRandomColor();
-                
                 // Save profile locally
                 this.saveData('userProfile', this.userProfile);
-                
                 // Show household code modal
                 this.showHouseholdCodeModal();
                 return;
             }
-            
             // Update profile display immediately
             this.updateProfileDisplay();
-            
             // Log analytics event
             this.firebase.logEvent(this.firebase.analytics, 'login', {
                 method: 'google',
                 user_id: user.uid
             });
-            
         } catch (error) {
             console.error('Google sign in error:', error);
-            
             // Log failed login attempt
             this.firebase.logEvent(this.firebase.analytics, 'login_failed', {
                 method: 'google',
                 error_code: error.code
             });
-            
             this.showNotification('Google sign in failed: ' + error.message, 'error');
         }
     }
-
     showHouseholdCodeModal() {
         const modal = document.getElementById('household-code-modal');
         if (modal) {
@@ -4926,7 +4212,6 @@ class HouseholdManager {
             console.log('Household code modal shown');
         }
     }
-
     hideHouseholdCodeModal() {
         const modal = document.getElementById('household-code-modal');
         if (modal) {
@@ -4934,14 +4219,11 @@ class HouseholdManager {
             console.log('Household code modal hidden');
         }
     }
-
     async createHousehold() {
         try {
             console.log('Creating new household...');
-            
             // Generate household code
             const householdCode = this.generateHouseholdCode();
-            
             // Create household document
             const householdRef = await this.firebase.addDoc(this.firebase.collection(this.firebase.db, 'households'), {
                 code: householdCode,
@@ -4949,9 +4231,7 @@ class HouseholdManager {
                 createdAt: new Date().toISOString(),
                 createdBy: this.currentUser.uid
             });
-            
             this.householdId = householdRef.id;
-            
             // Add user to household
             await this.firebase.setDoc(
                 this.firebase.doc(this.firebase.db, 'households', this.householdId, 'roommates', this.currentUser.uid),
@@ -4963,7 +4243,6 @@ class HouseholdManager {
                     joinedAt: new Date().toISOString()
                 }
             );
-            
             // Save user data
             await this.firebase.setDoc(
                 this.firebase.doc(this.firebase.db, 'users', this.currentUser.uid),
@@ -4975,42 +4254,33 @@ class HouseholdManager {
                     createdAt: new Date().toISOString()
                 }
             );
-            
             // Save locally
             this.saveData('householdId', this.householdId);
             this.saveData('userProfile', this.userProfile);
-            
             // Load household data
             await this.loadHouseholdData();
-            
             this.hideHouseholdCodeModal();
             this.updateProfileDisplay();
             this.showNotification(`Household created! Code: ${householdCode}`, 'success');
-            
         } catch (error) {
             console.error('Error creating household:', error);
             this.showNotification('Error creating household: ' + error.message, 'error');
         }
     }
-
     async joinHousehold(householdCode) {
         try {
             console.log('Joining household with code:', householdCode);
-            
             // Find household by code
             const householdQuery = this.firebase.query(
                 this.firebase.collection(this.firebase.db, 'households'),
                 this.firebase.where('code', '==', householdCode)
             );
             const householdSnapshot = await this.firebase.getDocs(householdQuery);
-            
             if (householdSnapshot.empty) {
                 throw new Error('Household code not found');
             }
-            
             const householdDoc = householdSnapshot.docs[0];
             this.householdId = householdDoc.id;
-            
             // Add user to household
             await this.firebase.setDoc(
                 this.firebase.doc(this.firebase.db, 'households', this.householdId, 'roommates', this.currentUser.uid),
@@ -5022,7 +4292,6 @@ class HouseholdManager {
                     joinedAt: new Date().toISOString()
                 }
             );
-            
             // Save user data
             await this.firebase.setDoc(
                 this.firebase.doc(this.firebase.db, 'users', this.currentUser.uid),
@@ -5034,31 +4303,25 @@ class HouseholdManager {
                     createdAt: new Date().toISOString()
                 }
             );
-            
             // Save locally
             this.saveData('householdId', this.householdId);
             this.saveData('userProfile', this.userProfile);
-            
             // Load household data
             await this.loadHouseholdData();
-            
             this.hideHouseholdCodeModal();
             this.updateProfileDisplay();
             this.showNotification('Joined household successfully!', 'success');
-            
         } catch (error) {
             console.error('Error joining household:', error);
             this.showNotification('Error joining household: ' + error.message, 'error');
         }
     }
-
     async signUp(name, email, password, householdCode) {
         try {
             console.log('Attempting sign up...');
             const userCredential = await this.firebase.createUserWithEmailAndPassword(this.firebase.auth, email, password);
             const user = userCredential.user;
             console.log('User created:', user);
-            
             // Create or join household
             let householdId = householdCode;
             if (!householdId) {
@@ -5072,14 +4335,11 @@ class HouseholdManager {
                 householdId = householdRef.id;
                 console.log('Household created:', householdId);
             }
-
             console.log('Saving user data...');
-            
             // Auto-update user profile with signup information
             this.userProfile.name = name;
             this.userProfile.email = email;
             this.userProfile.color = this.generateRandomColor();
-            
             // Save user data
             await this.firebase.setDoc(this.firebase.doc(this.firebase.db, 'users', user.uid), {
                 name: name,
@@ -5087,13 +4347,10 @@ class HouseholdManager {
                 householdId: householdId,
                 profile: this.userProfile
             });
-            
             // Save profile locally
             this.saveData('userProfile', this.userProfile);
-            
             // Update profile display immediately
             this.updateProfileDisplay();
-
             console.log('Adding user to household...');
             // Add user to household roommates
             await this.firebase.addDoc(this.firebase.collection(this.firebase.db, 'households', householdId, 'roommates'), {
@@ -5103,18 +4360,15 @@ class HouseholdManager {
                 userId: user.uid,
                 createdAt: new Date().toISOString()
             });
-
             this.showNotification('Account created successfully!', 'success');
         } catch (error) {
             console.error('Sign up error:', error);
             this.showNotification('Sign up failed: ' + error.message, 'error');
         }
     }
-
     async signOut() {
         try {
             console.log('Signing out user');
-            
             // Handle guest users
             if (this.isGuest) {
                 console.log('Signing out guest user');
@@ -5122,39 +4376,30 @@ class HouseholdManager {
                 this.isOnline = false;
                 this.householdId = null;
                 this.isGuest = false;
-                
                 // Clear all data
                 this.clearAllData();
-                
                 // Show auth screen
                 this.showAuthScreen();
-                
                 this.showNotification('Guest signed out successfully!', 'success');
                 return;
             }
-            
             // Handle Firebase authenticated users
             if (this.firebase && this.firebase.auth) {
                 await this.firebase.signOut(this.firebase.auth);
             }
-            
             this.currentUser = null;
             this.isOnline = false;
             this.householdId = null;
-            
             // Clear all data
             this.clearAllData();
-            
             // Show auth screen
             this.showAuthScreen();
-            
             this.showNotification('Signed out successfully!', 'success');
         } catch (error) {
             console.error('Error signing out:', error);
             this.showNotification('Sign out failed: ' + error.message, 'error');
         }
     }
-
     // Maintenance Contact Settings Functions
     openMaintenanceContactModal() {
         const modal = document.getElementById('maintenance-contact-modal');
@@ -5166,29 +4411,24 @@ class HouseholdManager {
                 phone: '',
                 label: 'Report to Maintenance'
             };
-            
             document.getElementById('maintenance-contact-type').value = settings.type;
             document.getElementById('maintenance-url').value = settings.url;
             document.getElementById('maintenance-phone').value = settings.phone;
             document.getElementById('maintenance-label').value = settings.label;
-            
             this.updateMaintenanceContactType();
             modal.style.display = 'flex';
         }
     }
-
     hideMaintenanceContactModal() {
         const modal = document.getElementById('maintenance-contact-modal');
         if (modal) {
             modal.style.display = 'none';
         }
     }
-
     updateMaintenanceContactType() {
         const type = document.getElementById('maintenance-contact-type').value;
         const urlGroup = document.getElementById('url-group');
         const phoneGroup = document.getElementById('phone-group');
-        
         if (type === 'url') {
             urlGroup.style.display = 'block';
             phoneGroup.style.display = 'none';
@@ -5197,26 +4437,22 @@ class HouseholdManager {
             phoneGroup.style.display = 'block';
         }
     }
-
     saveMaintenanceContact() {
         const type = document.getElementById('maintenance-contact-type').value;
         const url = document.getElementById('maintenance-url').value;
         const phone = document.getElementById('maintenance-phone').value;
         const label = document.getElementById('maintenance-label').value;
-        
         const settings = {
             type: type,
             url: url,
             phone: phone,
             label: label
         };
-        
         this.saveData('maintenanceContact', settings);
         this.updateMaintenanceButton();
         this.hideMaintenanceContactModal();
         this.showNotification('Maintenance contact settings saved!', 'success');
     }
-
     updateMaintenanceButton() {
         const settings = this.loadData('maintenanceContact') || {
             type: 'url',
@@ -5224,13 +4460,11 @@ class HouseholdManager {
             phone: '',
             label: 'Report to Maintenance'
         };
-        
         const button = document.getElementById('report-maintenance-btn');
         if (button) {
             button.innerHTML = `<i class="fas fa-${settings.type === 'url' ? 'external-link-alt' : 'phone'}"></i> ${settings.label}`;
         }
     }
-
     reportToMaintenance() {
         const settings = this.loadData('maintenanceContact') || {
             type: 'url',
@@ -5238,7 +4472,6 @@ class HouseholdManager {
             phone: '',
             label: 'Report to Maintenance'
         };
-        
         if (settings.type === 'url' && settings.url) {
             window.open(settings.url, '_blank');
         } else if (settings.type === 'phone' && settings.phone) {
@@ -5248,11 +4481,9 @@ class HouseholdManager {
         }
     }
 }
-
 // Initialize the application when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new HouseholdManager();
-    
     // Initialize default roommates if none exist
     if (window.app.roommates.length === 0) {
         window.app.roommates = [
@@ -5263,7 +4494,6 @@ document.addEventListener('DOMContentLoaded', () => {
         window.app.saveData('roommates', window.app.roommates);
         window.app.renderRoommates();
     }
-    
     // Initialize default chores if none exist
     if (window.app.chores.length === 0) {
         window.app.chores = [
@@ -5275,29 +4505,23 @@ document.addEventListener('DOMContentLoaded', () => {
         window.app.saveData('chores', window.app.chores);
         window.app.renderCalendar();
     }
-
     // Login Modal Event Listeners
     setupLoginModal();
 });
-
 function setupLoginModal() {
     console.log('Setting up login modal...');
-    
     // Wait for elements to be available
     setTimeout(() => {
         // Tab switching
         const tabButtons = document.querySelectorAll('.tab-btn');
         console.log('Found tab buttons:', tabButtons.length);
-        
         tabButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const tab = e.target.dataset.tab;
                 console.log('Tab clicked:', tab);
-                
                 // Update tab buttons
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                 e.target.classList.add('active');
-                
                 // Update forms
                 document.querySelectorAll('.login-form').forEach(f => f.classList.remove('active'));
                 const form = document.getElementById(tab + '-form');
@@ -5306,7 +4530,6 @@ function setupLoginModal() {
                 }
             });
         });
-
         // Google Sign-In button
         const googleSignInBtn = document.getElementById('google-signin-btn');
         if (googleSignInBtn) {
@@ -5318,7 +4541,6 @@ function setupLoginModal() {
         } else {
             console.error('Google sign in button not found');
         }
-
         // Sign In button
         const signInBtn = document.getElementById('signin-btn');
         if (signInBtn) {
@@ -5326,9 +4548,7 @@ function setupLoginModal() {
             signInBtn.addEventListener('click', () => {
                 const email = document.getElementById('login-email')?.value;
                 const password = document.getElementById('login-password')?.value;
-                
                 console.log('Sign in attempt:', { email, password: '***' });
-                
                 if (email && password) {
                     window.app.signIn(email, password);
                 } else {
@@ -5338,7 +4558,6 @@ function setupLoginModal() {
         } else {
             console.error('Sign in button not found');
         }
-
         // Sign Up button
         const signUpBtn = document.getElementById('signup-btn');
         if (signUpBtn) {
@@ -5348,9 +4567,7 @@ function setupLoginModal() {
                 const email = document.getElementById('signup-email')?.value;
                 const password = document.getElementById('signup-password')?.value;
                 const householdCode = document.getElementById('household-code')?.value;
-                
                 console.log('Sign up attempt:', { name, email, password: '***', householdCode });
-                
                 if (name && email && password) {
                     window.app.signUp(name, email, password, householdCode);
                 } else {
@@ -5360,7 +4577,6 @@ function setupLoginModal() {
         } else {
             console.error('Sign up button not found');
         }
-
         // Household Code Modal buttons
         const createHouseholdBtn = document.getElementById('create-household-btn');
         if (createHouseholdBtn) {
@@ -5372,14 +4588,12 @@ function setupLoginModal() {
         } else {
             console.error('Create household button not found');
         }
-
         const joinHouseholdBtn = document.getElementById('join-household-btn');
         if (joinHouseholdBtn) {
             console.log('Found join household button');
             joinHouseholdBtn.addEventListener('click', () => {
                 const householdCode = document.getElementById('join-household-code')?.value;
                 console.log('Join household clicked with code:', householdCode);
-                
                 if (householdCode && householdCode.trim() !== '') {
                     window.app.joinHousehold(householdCode.trim());
                 } else {
@@ -5389,7 +4603,6 @@ function setupLoginModal() {
         } else {
             console.error('Join household button not found');
         }
-
         // Close modal
         const closeBtn = document.querySelector('#login-modal .close-btn');
         if (closeBtn) {
@@ -5397,7 +4610,6 @@ function setupLoginModal() {
                 window.app.hideLoginModal();
             });
         }
-
         // Close on outside click
         const modal = document.getElementById('login-modal');
         if (modal) {
@@ -5409,11 +4621,9 @@ function setupLoginModal() {
         }
     }, 1000); // Wait 1 second for elements to load
 }
-
 // Also initialize immediately if DOM is already loaded
 if (document.readyState !== 'loading') {
     window.app = new HouseholdManager();
-    
     // Initialize default roommates if none exist
     if (window.app.roommates.length === 0) {
         window.app.roommates = [
@@ -5423,17 +4633,5 @@ if (document.readyState !== 'loading') {
     ];
         window.app.saveData('roommates', window.app.roommates);
         window.app.renderRoommates();
-}
-
-    // Initialize default chores if none exist
-    if (window.app.chores.length === 0) {
-        window.app.chores = [
-        { id: '1', name: 'Take out trash', frequency: 'weekly', assignedTo: '1', duration: 15, createdAt: new Date().toISOString() },
-        { id: '2', name: 'Vacuum living room', frequency: 'weekly', assignedTo: '2', duration: 30, createdAt: new Date().toISOString() },
-        { id: '3', name: 'Mop kitchen floor', frequency: 'weekly', assignedTo: '3', duration: 20, createdAt: new Date().toISOString() },
-        { id: '4', name: 'Deep clean bathroom', frequency: 'none', assignedTo: '1', duration: 45, createdAt: new Date().toISOString() }
-    ];
-        window.app.saveData('chores', window.app.chores);
-        window.app.renderCalendar();
     }
 }
