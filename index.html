@@ -57,69 +57,81 @@
                 <p>Manage your household tasks, chores, and more</p>
             </div>
             
-            <div class="auth-sections">
-                <!-- Sign In Section -->
-                <div class="auth-section active" id="signin-section">
-                    <div class="section-header">
-                        <h2>Welcome Back</h2>
-                        <p>Sign in to your account</p>
-                    </div>
-                    
-                    <form id="signin-form" class="auth-form">
-                        <div class="form-group">
-                            <input type="email" id="signin-email" placeholder="Email address" required>
+            <div class="auth-layout">
+                <!-- Main Auth Section -->
+                <div class="main-auth-section">
+                    <div class="auth-sections">
+                        <!-- Sign In Section -->
+                        <div class="auth-section active" id="signin-section">
+                            <div class="section-header">
+                                <h2>Sign In</h2>
+                                <p>Welcome back! Sign in to your account</p>
+                            </div>
+                            
+                            <form id="signin-form" class="auth-form">
+                                <div class="form-group">
+                                    <input type="email" id="signin-email" placeholder="Email address" required>
+                                </div>
+                                <div class="form-group">
+                                    <input type="password" id="signin-password" placeholder="Password" required>
+                                </div>
+                                <button type="submit" class="auth-btn primary-btn">
+                                    Sign In
+                                </button>
+                            </form>
+                            
+                            <div class="section-footer">
+                                <p>Don't have an account? <a href="#" id="show-signup">Create one</a></p>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <input type="password" id="signin-password" placeholder="Password" required>
+                        
+                        <!-- Sign Up Section -->
+                        <div class="auth-section" id="signup-section">
+                            <div class="section-header">
+                                <h2>Create Account</h2>
+                                <p>Get started with Household Manager</p>
+                            </div>
+                            
+                            <form id="signup-form" class="auth-form">
+                                <div class="form-group">
+                                    <input type="text" id="signup-name" placeholder="Full name" required>
+                                </div>
+                                <div class="form-group">
+                                    <input type="email" id="signup-email" placeholder="Email address" required>
+                                </div>
+                                <div class="form-group">
+                                    <input type="password" id="signup-password" placeholder="Password (min 6 characters)" required minlength="6">
+                                </div>
+                                <button type="submit" class="auth-btn primary-btn">
+                                    Create Account
+                                </button>
+                            </form>
+                            
+                            <div class="section-footer">
+                                <p>Already have an account? <a href="#" id="show-signin">Sign in</a></p>
+                            </div>
                         </div>
-                        <button type="submit" class="auth-btn primary-btn">
-                            Sign In
-                        </button>
-                    </form>
-                    
-                    <div class="section-footer">
-                        <p>Don't have an account? <a href="#" id="show-signup">Create one</a></p>
                     </div>
                 </div>
                 
-                <!-- Sign Up Section -->
-                <div class="auth-section" id="signup-section">
-                    <div class="section-header">
-                        <h2>Create Account</h2>
-                        <p>Get started with Household Manager</p>
-                    </div>
-                    
-                    <form id="signup-form" class="auth-form">
-                        <div class="form-group">
-                            <input type="text" id="signup-name" placeholder="Full name" required>
+                <!-- Guest Section -->
+                <div class="guest-auth-section">
+                    <div class="guest-card">
+                        <div class="guest-header">
+                            <h3>Try as Guest</h3>
+                            <p>No account needed</p>
                         </div>
-                        <div class="form-group">
-                            <input type="email" id="signup-email" placeholder="Email address" required>
-                        </div>
-                        <div class="form-group">
-                            <input type="password" id="signup-password" placeholder="Password (min 6 characters)" required minlength="6">
-                        </div>
-                        <button type="submit" class="auth-btn primary-btn">
-                            Create Account
+                        
+                        <button id="guest-auth-btn" class="auth-btn guest-btn">
+                            <i class="fas fa-user-clock"></i>
+                            Continue as Guest
                         </button>
-                    </form>
-                    
-                    <div class="section-footer">
-                        <p>Already have an account? <a href="#" id="show-signin">Sign in</a></p>
+                        
+                        <div class="guest-info">
+                            <p>Data will be saved locally on this device</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="auth-divider">
-                <span>or</span>
-            </div>
-            
-            <div class="guest-section">
-                <button id="guest-auth-btn" class="auth-btn guest-btn">
-                    <i class="fas fa-user-clock"></i>
-                    Continue as Guest
-                </button>
-                <p class="guest-text">Try the app without signing in. Data will be saved locally.</p>
             </div>
         </div>
     </div>
