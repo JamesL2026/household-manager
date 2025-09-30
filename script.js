@@ -133,7 +133,7 @@ class HouseholdManager {
         this.initFirebase();
         
         // Initialize email authentication (reliable)
-        this.auth = new RedirectAuth(this);
+        this.auth = new EmailAuth(this);
         this.auth.initialize();
         
         // Set up mandatory authentication
@@ -5054,15 +5054,23 @@ class HouseholdManager {
         
         // Set up event listeners for auth options - use setTimeout to ensure DOM is ready
         setTimeout(() => {
-            const googleBtn = document.getElementById('google-auth-btn');
+            const signinForm = document.getElementById('signin-form');
             const guestBtn = document.getElementById('guest-auth-btn');
+            const createAccountBtn = document.getElementById('create-account-btn');
 
-            console.log('Setting up auth form listeners:', { googleBtn, guestBtn });
+            console.log('Setting up auth form listeners:', { signinForm, guestBtn, createAccountBtn });
 
-            if (googleBtn) {
-                googleBtn.addEventListener('click', () => {
-                    console.log('Google auth button clicked');
-                    this.auth.signInWithGoogle();
+            if (signinForm) {
+                signinForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const email = document.getElementById('signin-email').value;
+                    const password = document.getElementById('signin-password').value;
+
+                    try {
+                        await this.auth.signInWithEmail(email, password);
+                    } catch (error) {
+                        console.error('Sign in error:', error);
+                    }
                 });
             }
 
@@ -5070,6 +5078,13 @@ class HouseholdManager {
                 guestBtn.addEventListener('click', () => {
                     console.log('Guest auth button clicked');
                     this.auth.signInAsGuest();
+                });
+            }
+
+            if (createAccountBtn) {
+                createAccountBtn.addEventListener('click', () => {
+                    console.log('Create account button clicked');
+                    this.showCreateAccountModal();
                 });
             }
         }, 100);
@@ -5100,27 +5115,21 @@ class HouseholdManager {
         }
     }
 
-    // Switch between auth tabs
-    switchAuthTab(tab) {
-        console.log('Switching to tab:', tab);
+    // Show create account modal
+    showCreateAccountModal() {
+        const name = prompt('Enter your full name:');
+        if (!name) return;
         
-        // Update tab buttons
-        const signinTab = document.getElementById('signin-tab');
-        const signupTab = document.getElementById('signup-tab');
+        const email = prompt('Enter your email address:');
+        if (!email) return;
         
-        if (signinTab && signupTab) {
-            signinTab.classList.toggle('active', tab === 'signin');
-            signupTab.classList.toggle('active', tab === 'signup');
+        const password = prompt('Enter a password (min 6 characters):');
+        if (!password || password.length < 6) {
+            this.showNotification('Password must be at least 6 characters', 'error');
+            return;
         }
         
-        // Update form containers
-        const signinContainer = document.getElementById('signin-container');
-        const signupContainer = document.getElementById('signup-container');
-        
-        if (signinContainer && signupContainer) {
-            signinContainer.classList.toggle('active', tab === 'signin');
-            signupContainer.classList.toggle('active', tab === 'signup');
-        }
+        this.auth.createAccount(email, password, name);
     }
 
     // Hide authentication screen and show app
@@ -5858,6 +5867,178 @@ if (document.readyState !== 'loading' && !window.app) {
     ];
         window.app.saveData('chores', window.app.chores);
         window.app.renderCalendar();
+    }
+}
+
+// Email Authentication System for Household Manager
+class EmailAuth {
+    constructor(app) {
+        this.app = app;
+        this.firebase = window.firebase;
+        this.currentUser = null;
+        this.isOnline = false;
+    }
+
+    // Initialize authentication
+    async initialize() {
+        try {
+            console.log('Initializing email authentication...');
+
+            this.firebase.onAuthStateChanged(this.firebase.auth, async (user) => {
+                console.log('Auth state changed:', user ? 'signed in' : 'signed out');
+                if (user) {
+                    await this.handleUserSignIn(user);
+                } else {
+                    this.handleUserSignOut();
+                }
+            });
+
+            // Check if user is already signed in
+            if (this.firebase.auth.currentUser) {
+                console.log('User already signed in');
+                await this.handleUserSignIn(this.firebase.auth.currentUser);
+            } else {
+                console.log('No user signed in');
+                this.app.showAuthScreen();
+            }
+        } catch (error) {
+            console.error('Error initializing auth:', error);
+            this.app.showAuthScreen();
+        }
+    }
+
+    // Handle user sign in
+    async handleUserSignIn(user) {
+        try {
+            console.log('Handling user sign in:', user.email);
+            this.currentUser = user;
+            this.isOnline = true;
+            this.app.currentUser = user;
+            this.app.isOnline = true;
+
+            const userDoc = await this.firebase.getDoc(this.firebase.doc(this.firebase.db, 'users', user.uid));
+
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                this.app.householdId = userData.householdId;
+                this.app.userProfile = userData.profile || this.app.userProfile;
+                this.app.saveData('userProfile', this.app.userProfile);
+                this.app.saveData('householdId', this.app.householdId);
+                await this.app.loadHouseholdData();
+                this.app.hideAuthScreen();
+                this.app.initializeApp();
+                if (!this.app.welcomeNotificationShown) {
+                    this.app.showNotification('Welcome back!', 'success');
+                    this.app.welcomeNotificationShown = true;
+                }
+            } else {
+                this.app.userProfile.name = user.displayName || user.email.split('@')[0];
+                this.app.userProfile.email = user.email;
+                this.app.userProfile.avatar = user.photoURL;
+                this.app.userProfile.color = this.app.generateRandomColor();
+                this.app.saveData('userProfile', this.app.userProfile);
+                this.app.hideAuthScreen();
+                this.app.showHouseholdCodeModal();
+            }
+        } catch (error) {
+            console.error('Error handling user sign in:', error);
+            this.app.showNotification('Error signing in: ' + error.message, 'error');
+        }
+    }
+
+    // Handle user sign out
+    handleUserSignOut() {
+        console.log('Handling user sign out');
+        this.currentUser = null;
+        this.isOnline = false;
+        this.app.currentUser = null;
+        this.app.isOnline = false;
+        this.app.householdId = null;
+        this.app.clearAllData();
+        this.app.showAuthScreen();
+        this.app.welcomeNotificationShown = false; // Reset flag on sign out
+        this.app.guestNotificationShown = false; // Reset flag on sign out
+        this.app.showNotification('Signed out successfully', 'success');
+    }
+
+    // Sign in with email and password
+    async signInWithEmail(email, password) {
+        try {
+            const userCredential = await this.firebase.signInWithEmailAndPassword(this.firebase.auth, email, password);
+            console.log('Signed in with email:', userCredential.user.email);
+            // handleUserSignIn will be called by onAuthStateChanged
+        } catch (error) {
+            console.error('Email sign in error:', error);
+            this.app.showNotification('Sign in failed: ' + error.message, 'error');
+            throw error;
+        }
+    }
+
+    // Create account with email and password
+    async createAccount(email, password, name) {
+        try {
+            const userCredential = await this.firebase.createUserWithEmailAndPassword(this.firebase.auth, email, password);
+            const user = userCredential.user;
+            console.log('Account created with email:', user.email);
+
+            // Update user profile immediately
+            this.app.userProfile.name = name;
+            this.app.userProfile.email = user.email;
+            this.app.userProfile.avatar = user.photoURL; // Will be null for email auth
+            this.app.userProfile.color = this.app.generateRandomColor();
+            this.app.saveData('userProfile', this.app.userProfile);
+
+            // Create user document in Firestore
+            await this.firebase.setDoc(this.firebase.doc(this.firebase.db, 'users', user.uid), {
+                profile: this.app.userProfile,
+                createdAt: new Date(),
+                uid: user.uid,
+                email: user.email
+            });
+
+            this.app.showNotification('Account created successfully!', 'success');
+            // handleUserSignIn will be called by onAuthStateChanged
+        } catch (error) {
+            console.error('Account creation error:', error);
+            this.app.showNotification('Account creation failed: ' + error.message, 'error');
+            throw error;
+        }
+    }
+
+    // Sign out
+    async signOut() {
+        try {
+            await this.firebase.signOut(this.firebase.auth);
+            // handleUserSignOut will be called by onAuthStateChanged
+        } catch (error) {
+            console.error('Error signing out:', error);
+            this.app.showNotification('Error signing out: ' + error.message, 'error');
+        }
+    }
+
+    // Sign in as guest
+    signInAsGuest() {
+        console.log('Signing in as guest');
+        this.currentUser = { uid: 'guest', displayName: 'Guest', email: 'guest@example.com' };
+        this.isOnline = false; // Guest is considered offline for data sync
+        this.app.currentUser = this.currentUser;
+        this.app.isOnline = false;
+        this.app.isGuest = true;
+        this.app.householdId = 'guest_household'; // Use a dummy household ID for guest
+        this.app.userProfile = {
+            name: 'Guest User',
+            email: 'guest@example.com',
+            avatar: null,
+            color: this.app.generateRandomColor()
+        };
+        this.app.saveData('userProfile', this.app.userProfile);
+        this.app.saveData('householdId', this.app.householdId);
+        this.app.hideAuthScreen();
+        this.app.initializeApp();
+        if (!this.app.guestNotificationShown) {
+            this.app.showNotification('Welcome! You are using guest mode. Data will be saved locally but won\'t sync across devices.', 'info');
+            this.app.guestNotificationShown = true;
+        }
     }
 }
 

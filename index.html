@@ -54,24 +54,25 @@
         <div class="auth-container">
             <div class="auth-header">
                 <h1>🏠 Household Manager</h1>
-                <p>Please choose how you'd like to access your household</p>
             </div>
             
             <div class="auth-options">
-                <div class="auth-option-card google-option">
+                <div class="auth-option-card login-option">
                     <div class="auth-icon">
-                        <i class="fab fa-google"></i>
+                        <i class="fas fa-user"></i>
                     </div>
-                    <h3>Sign in with Google</h3>
-                    <p>Access your household with your Google account for full features and data persistence</p>
-                    <button id="google-auth-btn" class="auth-btn google-btn">
-                        <i class="fab fa-google"></i>
-                        Sign in with Google
-                    </button>
-                </div>
-
-                <div class="auth-divider">
-                    <span>or</span>
+                    <h3>Sign In</h3>
+                    <form id="signin-form" class="auth-form">
+                        <div class="form-group">
+                            <input type="email" id="signin-email" placeholder="Email address" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="password" id="signin-password" placeholder="Password" required>
+                        </div>
+                        <button type="submit" class="auth-btn login-btn">
+                            Sign In
+                        </button>
+                    </form>
                 </div>
 
                 <div class="auth-option-card guest-option">
@@ -79,7 +80,6 @@
                         <i class="fas fa-user-clock"></i>
                     </div>
                     <h3>Continue as Guest</h3>
-                    <p>Try the app without signing in. Data will be saved locally but won't sync across devices</p>
                     <button id="guest-auth-btn" class="auth-btn guest-btn">
                         <i class="fas fa-user-clock"></i>
                         Continue as Guest
@@ -87,8 +87,11 @@
                 </div>
             </div>
             
-            <div class="auth-footer">
-                <p><small>By continuing, you agree to our terms of service</small></p>
+            <div class="create-account-section">
+                <button id="create-account-btn" class="auth-btn create-btn">
+                    <i class="fas fa-user-plus"></i>
+                    Create Account
+                </button>
             </div>
         </div>
     </div>

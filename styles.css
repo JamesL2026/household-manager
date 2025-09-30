@@ -3572,14 +3572,8 @@ input[readonly] {
 
 .auth-header h1 {
     color: #333;
-    margin-bottom: 10px;
-    font-size: 2.5em;
-}
-
-.auth-header p {
-    color: #333;
     margin-bottom: 30px;
-    font-size: 16px;
+    font-size: 2.5em;
 }
 
 .auth-options {
@@ -3607,7 +3601,7 @@ input[readonly] {
     transform: translateY(-2px);
 }
 
-.auth-option-card.google-option:hover {
+.auth-option-card.login-option:hover {
     border-color: #1a73e8;
     box-shadow: 0 8px 25px rgba(26, 115, 232, 0.15);
 }
@@ -3622,7 +3616,7 @@ input[readonly] {
     margin-bottom: 15px;
 }
 
-.auth-option-card.google-option .auth-icon {
+.auth-option-card.login-option .auth-icon {
     color: #1a73e8;
 }
 
@@ -3643,6 +3637,38 @@ input[readonly] {
     line-height: 1.5;
 }
 
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group input {
+    padding: 12px 15px;
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+    background: white;
+    color: #333;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+}
+
+.form-group input::placeholder {
+    color: #999;
+}
+
 .auth-btn {
     width: 100%;
     padding: 15px 25px;
@@ -3658,12 +3684,12 @@ input[readonly] {
     gap: 8px;
 }
 
-.google-btn {
+.login-btn {
     background: linear-gradient(135deg, #1a73e8, #4285f4);
     color: white;
 }
 
-.google-btn:hover {
+.login-btn:hover {
     background: linear-gradient(135deg, #1557b0, #3367d6);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
@@ -3681,31 +3707,31 @@ input[readonly] {
     color: #1a73e8;
 }
 
-.auth-divider {
-    display: flex;
-    align-items: center;
-    margin: 20px 0;
-    color: #333;
-    font-size: 0.9rem;
-}
-
-.auth-divider::before,
-.auth-divider::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: #e1e5e9;
-}
-
-.auth-divider span {
-    padding: 0 20px;
-    background: white;
-}
-
-.auth-footer {
+.create-account-section {
     margin-top: 30px;
-    color: #333;
-    font-size: 0.9rem;
+    text-align: center;
+}
+
+.create-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.create-btn:hover {
+    background: #218838;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
 }
 
 /* Responsive Design */
