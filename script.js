@@ -132,8 +132,8 @@ class HouseholdManager {
         // Initialize Firebase listeners
         this.initFirebase();
         
-        // Initialize bulletproof authentication (final attempt)
-        this.auth = new BulletproofAuth(this);
+        // Initialize email authentication (reliable)
+        this.auth = new EmailAuth(this);
         this.auth.initialize();
         
         // Set up mandatory authentication
@@ -5054,22 +5054,45 @@ class HouseholdManager {
         
         // Set up event listeners for auth options - use setTimeout to ensure DOM is ready
         setTimeout(() => {
-            const googleBtn = document.getElementById('google-auth-btn');
             const guestBtn = document.getElementById('guest-auth-btn');
+            const signinForm = document.getElementById('signin-form');
+            const signupForm = document.getElementById('signup-form');
             
-            console.log('Setting up auth button listeners:', { googleBtn, guestBtn });
-            
-            if (googleBtn) {
-                googleBtn.addEventListener('click', () => {
-                    console.log('Google auth button clicked');
-                    this.handleGoogleAuth();
-                });
-            }
+            console.log('Setting up auth form listeners:', { guestBtn, signinForm, signupForm });
             
             if (guestBtn) {
                 guestBtn.addEventListener('click', () => {
                     console.log('Guest auth button clicked');
-                    this.handleGuestAuth();
+                    this.auth.signInAsGuest();
+                });
+            }
+            
+            if (signinForm) {
+                signinForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const email = document.getElementById('signin-email').value;
+                    const password = document.getElementById('signin-password').value;
+                    
+                    try {
+                        await this.auth.signInWithEmail(email, password);
+                    } catch (error) {
+                        console.error('Sign in error:', error);
+                    }
+                });
+            }
+            
+            if (signupForm) {
+                signupForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const name = document.getElementById('signup-name').value;
+                    const email = document.getElementById('signup-email').value;
+                    const password = document.getElementById('signup-password').value;
+                    
+                    try {
+                        await this.auth.createAccount(email, password, name);
+                    } catch (error) {
+                        console.error('Sign up error:', error);
+                    }
                 });
             }
         }, 100);
