@@ -4079,10 +4079,8 @@ class HouseholdManager {
         this.saveData('settings', this.settings);
         // Hide auth screen and show app
         this.hideAuthScreen();
-        // Update profile display
-        this.updateProfileDisplay();
-        // Update roommates display
-        this.renderRoommates();
+        // Initialize the entire app for guest user
+        this.initializeApp();
         // Show guest notification
         this.showNotification('Welcome! You are using guest mode. Data will be saved locally but won\'t sync across devices.', 'info');
         console.log('Guest authentication completed');
