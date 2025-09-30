@@ -133,7 +133,7 @@ class HouseholdManager {
         this.initFirebase();
         
         // Initialize email authentication (reliable)
-        this.auth = new EmailAuth(this);
+        this.auth = new RedirectAuth(this);
         this.auth.initialize();
         
         // Set up mandatory authentication
@@ -5054,24 +5054,15 @@ class HouseholdManager {
         
         // Set up event listeners for auth options - use setTimeout to ensure DOM is ready
         setTimeout(() => {
+            const googleBtn = document.getElementById('google-auth-btn');
             const guestBtn = document.getElementById('guest-auth-btn');
-            const signinForm = document.getElementById('signin-form');
-            const signupForm = document.getElementById('signup-form');
-            const signinTab = document.getElementById('signin-tab');
-            const signupTab = document.getElementById('signup-tab');
 
-            console.log('Setting up auth form listeners:', { guestBtn, signinForm, signupForm, signinTab, signupTab });
+            console.log('Setting up auth form listeners:', { googleBtn, guestBtn });
 
-            // Tab switching
-            if (signinTab) {
-                signinTab.addEventListener('click', () => {
-                    this.switchAuthTab('signin');
-                });
-            }
-
-            if (signupTab) {
-                signupTab.addEventListener('click', () => {
-                    this.switchAuthTab('signup');
+            if (googleBtn) {
+                googleBtn.addEventListener('click', () => {
+                    console.log('Google auth button clicked');
+                    this.auth.signInWithGoogle();
                 });
             }
 
@@ -5079,35 +5070,6 @@ class HouseholdManager {
                 guestBtn.addEventListener('click', () => {
                     console.log('Guest auth button clicked');
                     this.auth.signInAsGuest();
-                });
-            }
-
-            if (signinForm) {
-                signinForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const email = document.getElementById('signin-email').value;
-                    const password = document.getElementById('signin-password').value;
-
-                    try {
-                        await this.auth.signInWithEmail(email, password);
-                    } catch (error) {
-                        console.error('Sign in error:', error);
-                    }
-                });
-            }
-
-            if (signupForm) {
-                signupForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const name = document.getElementById('signup-name').value;
-                    const email = document.getElementById('signup-email').value;
-                    const password = document.getElementById('signup-password').value;
-
-                    try {
-                        await this.auth.createAccount(email, password, name);
-                    } catch (error) {
-                        console.error('Sign up error:', error);
-                    }
                 });
             }
         }, 100);
@@ -5896,5 +5858,153 @@ if (document.readyState !== 'loading' && !window.app) {
     ];
         window.app.saveData('chores', window.app.chores);
         window.app.renderCalendar();
+    }
+}
+
+// Redirect Authentication System for Household Manager
+class RedirectAuth {
+    constructor(app) {
+        this.app = app;
+        this.firebase = window.firebase;
+        this.currentUser = null;
+        this.isOnline = false;
+    }
+
+    // Initialize authentication
+    async initialize() {
+        try {
+            console.log('Initializing redirect authentication...');
+
+            // Check for redirect result first
+            const result = await this.firebase.getRedirectResult(this.firebase.auth);
+            if (result && result.user) {
+                console.log('Redirect result found:', result.user.email);
+                await this.handleUserSignIn(result.user);
+                return;
+            }
+
+            // Set up auth state listener
+            this.firebase.onAuthStateChanged(this.firebase.auth, async (user) => {
+                console.log('Auth state changed:', user ? 'signed in' : 'signed out');
+                if (user) {
+                    await this.handleUserSignIn(user);
+                } else {
+                    this.handleUserSignOut();
+                }
+            });
+
+            // Check if user is already signed in
+            if (this.firebase.auth.currentUser) {
+                console.log('User already signed in');
+                await this.handleUserSignIn(this.firebase.auth.currentUser);
+            } else {
+                console.log('No user signed in');
+                this.app.showAuthScreen();
+            }
+        } catch (error) {
+            console.error('Error initializing auth:', error);
+            this.app.showAuthScreen();
+        }
+    }
+
+    // Handle user sign in
+    async handleUserSignIn(user) {
+        try {
+            console.log('Handling user sign in:', user.email);
+            this.currentUser = user;
+            this.isOnline = true;
+            this.app.currentUser = user;
+            this.app.isOnline = true;
+
+            const userDoc = await this.firebase.getDoc(this.firebase.doc(this.firebase.db, 'users', user.uid));
+
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                this.app.householdId = userData.householdId;
+                this.app.userProfile = userData.profile || this.app.userProfile;
+                this.app.saveData('userProfile', this.app.userProfile);
+                this.app.saveData('householdId', this.app.householdId);
+                await this.app.loadHouseholdData();
+                this.app.hideAuthScreen();
+                this.app.initializeApp();
+                if (!this.app.welcomeNotificationShown) {
+                    this.app.showNotification('Welcome back!', 'success');
+                    this.app.welcomeNotificationShown = true;
+                }
+            } else {
+                this.app.userProfile.name = user.displayName || user.email.split('@')[0];
+                this.app.userProfile.email = user.email;
+                this.app.userProfile.avatar = user.photoURL;
+                this.app.userProfile.color = this.app.generateRandomColor();
+                this.app.saveData('userProfile', this.app.userProfile);
+                this.app.hideAuthScreen();
+                this.app.showHouseholdCodeModal();
+            }
+        } catch (error) {
+            console.error('Error handling user sign in:', error);
+            this.app.showNotification('Error signing in: ' + error.message, 'error');
+        }
+    }
+
+    // Handle user sign out
+    handleUserSignOut() {
+        console.log('Handling user sign out');
+        this.currentUser = null;
+        this.isOnline = false;
+        this.app.currentUser = null;
+        this.app.isOnline = false;
+        this.app.householdId = null;
+        this.app.clearAllData();
+        this.app.showAuthScreen();
+        this.app.welcomeNotificationShown = false; // Reset flag on sign out
+        this.app.guestNotificationShown = false; // Reset flag on sign out
+        this.app.showNotification('Signed out successfully', 'success');
+    }
+
+    // Sign in with Google using redirect
+    async signInWithGoogle() {
+        try {
+            const provider = new this.firebase.GoogleAuthProvider();
+            await this.firebase.signInWithRedirect(this.firebase.auth, provider);
+        } catch (error) {
+            console.error('Google sign in error:', error);
+            this.app.showNotification('Google sign in failed: ' + error.message, 'error');
+        }
+    }
+
+    // Sign out
+    async signOut() {
+        try {
+            await this.firebase.signOut(this.firebase.auth);
+            // handleUserSignOut will be called by onAuthStateChanged
+        } catch (error) {
+            console.error('Error signing out:', error);
+            this.app.showNotification('Error signing out: ' + error.message, 'error');
+        }
+    }
+
+    // Sign in as guest
+    signInAsGuest() {
+        console.log('Signing in as guest');
+        this.currentUser = { uid: 'guest', displayName: 'Guest', email: 'guest@example.com' };
+        this.isOnline = false; // Guest is considered offline for data sync
+        this.app.currentUser = this.currentUser;
+        this.app.isOnline = false;
+        this.app.isGuest = true;
+        this.app.householdId = 'guest_household'; // Use a dummy household ID for guest
+        this.app.userProfile = {
+            name: 'Guest User',
+            email: 'guest@example.com',
+            avatar: null,
+            color: this.app.generateRandomColor()
+        };
+        this.app.saveData('userProfile', this.app.userProfile);
+        this.app.saveData('householdId', this.app.householdId);
+        this.app.hideAuthScreen();
+        this.app.initializeApp();
+        if (!this.app.guestNotificationShown) {
+            this.app.showNotification('Welcome! You are using guest mode. Data will be saved locally but won\'t sync across devices.', 'info');
+            this.app.guestNotificationShown = true;
+        }
     }
 }
