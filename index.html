@@ -10,7 +10,7 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
         import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
         import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
         import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js';
@@ -39,7 +39,7 @@
         window.firebase = { 
             auth, db, storage, messaging, analytics,
             signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, 
-            GoogleAuthProvider, signInWithPopup,
+            GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
             collection, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, onSnapshot,
             query, where, orderBy, limit,
             uploadBytes, getDownloadURL, deleteObject,
@@ -68,6 +68,10 @@
                         <i class="fab fa-google"></i>
                         Continue with Google
                     </button>
+                    <div class="popup-help" style="margin-top: 10px; font-size: 12px; color: #666;">
+                        <i class="fas fa-info-circle"></i>
+                        If popup is blocked, we'll automatically use redirect method
+                    </div>
                 </div>
                 
                 <div class="auth-divider">

@@ -130,6 +130,9 @@ class HouseholdManager {
         // Initialize Firebase listeners
         this.initFirebase();
         
+        // Handle redirect results (for popup blocker fallback)
+        this.handleRedirectResult();
+        
         // Set up mandatory authentication
         this.setupMandatoryAuth();
         
@@ -4778,6 +4781,61 @@ class HouseholdManager {
         }
     }
 
+    // Handle redirect results for popup blocker fallback
+    async handleRedirectResult() {
+        try {
+            const result = await this.firebase.getRedirectResult(this.firebase.auth);
+            if (result && result.user) {
+                console.log('Redirect sign-in successful:', result.user);
+                
+                // Process the redirect result the same way as popup
+                const user = result.user;
+                
+                // Check if user already exists
+                const userDoc = await this.firebase.getDoc(this.firebase.doc(this.firebase.db, 'users', user.uid));
+                
+                if (userDoc.exists()) {
+                    // Existing user - load their data
+                    const userData = userDoc.data();
+                    this.householdId = userData.householdId;
+                    this.userProfile = userData.profile || this.userProfile;
+                    
+                    // Save user data locally for persistence
+                    this.saveData('userProfile', this.userProfile);
+                    this.saveData('householdId', this.householdId);
+                    
+                    // Load household data
+                    await this.loadHouseholdData();
+                    this.showNotification('Welcome back!', 'success');
+                } else {
+                    // New user - show household code modal
+                    this.userProfile.name = user.displayName || user.email.split('@')[0];
+                    this.userProfile.email = user.email;
+                    this.userProfile.avatar = user.photoURL;
+                    this.userProfile.color = this.generateRandomColor();
+                    
+                    // Save profile locally
+                    this.saveData('userProfile', this.userProfile);
+                    
+                    // Show household code modal
+                    this.showHouseholdCodeModal();
+                    return;
+                }
+                
+                // Update profile display immediately
+                this.updateProfileDisplay();
+                
+                // Hide auth screen and show app
+                this.hideAuthScreen();
+                
+                // Initialize app
+                this.initializeApp();
+            }
+        } catch (error) {
+            console.error('Error handling redirect result:', error);
+        }
+    }
+
     // Set up mandatory authentication screen
     setupMandatoryAuth() {
         console.log('Setting up mandatory authentication');
@@ -4970,7 +5028,27 @@ class HouseholdManager {
             }
             
             const provider = new this.firebase.GoogleAuthProvider();
-            const result = await this.firebase.signInWithPopup(this.firebase.auth, provider);
+            
+            // Try popup first, fallback to redirect if blocked
+            let result;
+            try {
+                result = await this.firebase.signInWithPopup(this.firebase.auth, provider);
+            } catch (popupError) {
+                console.log('Popup blocked, trying redirect method...', popupError);
+                
+                // Check if it's a popup blocker error
+                if (popupError.code === 'auth/popup-blocked' || popupError.message.includes('popup')) {
+                    this.showNotification('Popup blocked! Redirecting to Google sign-in...', 'info');
+                } else {
+                    this.showNotification('Sign-in error: ' + popupError.message, 'error');
+                    return;
+                }
+                
+                // Try redirect method as fallback
+                await this.firebase.signInWithRedirect(this.firebase.auth, provider);
+                return; // Redirect will handle the rest
+            }
+            
             const user = result.user;
             
             console.log('Google sign in successful:', user);
