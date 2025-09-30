@@ -5057,22 +5057,37 @@ class HouseholdManager {
             const guestBtn = document.getElementById('guest-auth-btn');
             const signinForm = document.getElementById('signin-form');
             const signupForm = document.getElementById('signup-form');
-            
-            console.log('Setting up auth form listeners:', { guestBtn, signinForm, signupForm });
-            
+            const signinTab = document.getElementById('signin-tab');
+            const signupTab = document.getElementById('signup-tab');
+
+            console.log('Setting up auth form listeners:', { guestBtn, signinForm, signupForm, signinTab, signupTab });
+
+            // Tab switching
+            if (signinTab) {
+                signinTab.addEventListener('click', () => {
+                    this.switchAuthTab('signin');
+                });
+            }
+
+            if (signupTab) {
+                signupTab.addEventListener('click', () => {
+                    this.switchAuthTab('signup');
+                });
+            }
+
             if (guestBtn) {
                 guestBtn.addEventListener('click', () => {
                     console.log('Guest auth button clicked');
                     this.auth.signInAsGuest();
                 });
             }
-            
+
             if (signinForm) {
                 signinForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const email = document.getElementById('signin-email').value;
                     const password = document.getElementById('signin-password').value;
-                    
+
                     try {
                         await this.auth.signInWithEmail(email, password);
                     } catch (error) {
@@ -5080,14 +5095,14 @@ class HouseholdManager {
                     }
                 });
             }
-            
+
             if (signupForm) {
                 signupForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const name = document.getElementById('signup-name').value;
                     const email = document.getElementById('signup-email').value;
                     const password = document.getElementById('signup-password').value;
-                    
+
                     try {
                         await this.auth.createAccount(email, password, name);
                     } catch (error) {
@@ -5120,6 +5135,29 @@ class HouseholdManager {
         
         if (appContainer) {
             appContainer.style.display = 'none';
+        }
+    }
+
+    // Switch between auth tabs
+    switchAuthTab(tab) {
+        console.log('Switching to tab:', tab);
+        
+        // Update tab buttons
+        const signinTab = document.getElementById('signin-tab');
+        const signupTab = document.getElementById('signup-tab');
+        
+        if (signinTab && signupTab) {
+            signinTab.classList.toggle('active', tab === 'signin');
+            signupTab.classList.toggle('active', tab === 'signup');
+        }
+        
+        // Update form containers
+        const signinContainer = document.getElementById('signin-container');
+        const signupContainer = document.getElementById('signup-container');
+        
+        if (signinContainer && signupContainer) {
+            signinContainer.classList.toggle('active', tab === 'signin');
+            signupContainer.classList.toggle('active', tab === 'signup');
         }
     }
 
