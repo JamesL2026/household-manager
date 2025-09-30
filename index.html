@@ -72,14 +72,6 @@
                         <i class="fas fa-info-circle"></i>
                         You'll be redirected to Google for secure sign-in
                     </div>
-                    <div class="auth-debug" style="margin-top: 8px; font-size: 11px; color: #888;">
-                        <button type="button" onclick="console.log('Current user:', window.app?.currentUser); console.log('Auth state:', window.app?.firebase?.auth?.currentUser);" style="background: none; border: none; color: #666; text-decoration: underline; cursor: pointer; margin-right: 10px;">
-                            Debug Auth State
-                        </button>
-                        <button type="button" onclick="window.app?.clearAuthState();" style="background: none; border: none; color: #666; text-decoration: underline; cursor: pointer;">
-                            Clear Auth State
-                        </button>
-                    </div>
                 </div>
                 
                 <div class="auth-divider">
@@ -1333,6 +1325,7 @@
         </div>
     </div>
 
+    <script src="auth-clean.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

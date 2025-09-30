@@ -130,11 +130,9 @@ class HouseholdManager {
         // Initialize Firebase listeners
         this.initFirebase();
         
-        // Set up Firebase auth state listener FIRST
-        this.setupAuthStateListener();
-        
-        // Then check for redirect results
-        this.checkForRedirectResult();
+        // Initialize clean authentication
+        this.auth = new CleanAuth(this);
+        this.auth.initialize();
         
         // Set up mandatory authentication
         this.setupMandatoryAuth();
@@ -4876,22 +4874,10 @@ class HouseholdManager {
 
     // Sign out method
     async signOut() {
-        try {
-            await this.firebase.signOut(this.firebase.auth);
-            this.currentUser = null;
-            this.isOnline = false;
-            this.householdId = null;
-            
-            // Clear local data
-            this.clearAllData();
-            
-            // Show auth screen
-            this.showAuthScreen();
-            
-            this.showNotification('Signed out successfully', 'success');
-        } catch (error) {
-            console.error('Error signing out:', error);
-            this.showNotification('Error signing out: ' + error.message, 'error');
+        if (this.auth) {
+            await this.auth.signOut();
+        } else {
+            this.showNotification('Authentication not initialized', 'error');
         }
     }
 
@@ -5240,49 +5226,10 @@ class HouseholdManager {
     }
 
     async signInWithGoogle() {
-        try {
-            console.log('Attempting Google sign in...');
-            console.log('Firebase auth object:', this.firebase.auth);
-            console.log('GoogleAuthProvider:', this.firebase.GoogleAuthProvider);
-            
-            // Check if Firebase is properly configured
-            if (!this.firebase || !this.firebase.auth || !this.firebase.GoogleAuthProvider) {
-                throw new Error('Firebase authentication not properly configured');
-            }
-            
-            const provider = new this.firebase.GoogleAuthProvider();
-            console.log('Google provider created:', provider);
-            
-            // Add additional scopes if needed
-            provider.addScope('email');
-            provider.addScope('profile');
-            
-            // Use redirect method only (no popup)
-            console.log('Using redirect method for Google sign-in...');
-            this.showNotification('Redirecting to Google sign-in...', 'info');
-            
-            // Use redirect method
-            await this.firebase.signInWithRedirect(this.firebase.auth, provider);
-            console.log('Redirect initiated successfully');
-            return; // Redirect will handle the rest
-            
-        } catch (error) {
-            console.error('Google sign in error:', error);
-            console.error('Error details:', {
-                code: error.code,
-                message: error.message,
-                stack: error.stack
-            });
-            
-            // Log failed login attempt
-            if (this.firebase && this.firebase.analytics) {
-                this.firebase.logEvent(this.firebase.analytics, 'login_failed', {
-                    method: 'google',
-                    error_code: error.code
-                });
-            }
-            
-            this.showNotification('Google sign in failed: ' + error.message, 'error');
+        if (this.auth) {
+            await this.auth.signInWithGoogle();
+        } else {
+            this.showNotification('Authentication not initialized', 'error');
         }
     }
 
