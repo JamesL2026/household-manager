@@ -3571,30 +3571,35 @@ input[readonly] {
     margin-bottom: 40px;
 }
 
-.auth-header h1 {
-    color: white;
+.title-box {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    padding: 30px;
+    display: inline-block;
+}
+
+.title-box h1 {
+    color: #333;
     margin-bottom: 10px;
     font-size: 2.5rem;
     font-weight: 700;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.auth-header p {
-    color: white;
+.title-box p {
+    color: #333;
     font-size: 1.1rem;
     margin: 0;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .auth-layout {
     display: flex;
     gap: 30px;
-    align-items: flex-start;
+    align-items: stretch;
 }
 
 .main-auth-section {
     flex: 1;
-    max-width: 500px;
 }
 
 .auth-sections {
@@ -3660,7 +3665,7 @@ input[readonly] {
 }
 
 .form-group input::placeholder {
-    color: #9aa0a6;
+    color: #666;
 }
 
 .primary-btn {
@@ -3711,15 +3716,19 @@ input[readonly] {
 }
 
 .guest-auth-section {
-    flex: 0 0 300px;
+    flex: 1;
 }
 
 .guest-card {
     background: white;
     border-radius: 16px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-    padding: 30px;
+    padding: 40px;
     text-align: center;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .guest-header {
@@ -3783,8 +3792,10 @@ input[readonly] {
     
     .guest-auth-section {
         flex: none;
-        max-width: 500px;
-        margin: 0 auto;
+    }
+    
+    .guest-card {
+        height: auto;
     }
 }
 
@@ -4353,7 +4364,7 @@ input[readonly] {
 }
 
 .form-group input::placeholder {
-    color: #9aa0a6;
+    color: #666;
 }
 
 .email-btn {
