@@ -130,8 +130,14 @@ class HouseholdManager {
         // Initialize Firebase listeners
         this.initFirebase();
         
+        // Set up Firebase auth state listener
+        this.setupAuthStateListener();
+        
         // Handle redirect results (for popup blocker fallback)
         this.handleRedirectResult();
+        
+        // Also check for redirect results on page load
+        this.checkForRedirectResult();
         
         // Set up mandatory authentication
         this.setupMandatoryAuth();
@@ -4836,6 +4842,120 @@ class HouseholdManager {
         } catch (error) {
             console.error('Error handling redirect result:', error);
         }
+    }
+
+    // Check for redirect results on page load (for when user returns from redirect)
+    async checkForRedirectResult() {
+        try {
+            // Check if we have a redirect result in the URL or if user is already authenticated
+            const result = await this.firebase.getRedirectResult(this.firebase.auth);
+            if (result && result.user) {
+                console.log('Found redirect result on page load:', result.user);
+                
+                // Set current user
+                this.currentUser = result.user;
+                this.isOnline = true;
+                
+                // Process the authentication
+                await this.processGoogleSignIn(result.user);
+            } else if (this.firebase.auth.currentUser) {
+                // User is already signed in
+                console.log('User already signed in:', this.firebase.auth.currentUser);
+                this.currentUser = this.firebase.auth.currentUser;
+                this.isOnline = true;
+                
+                // Check if user has household data
+                const userDoc = await this.firebase.getDoc(this.firebase.doc(this.firebase.db, 'users', this.currentUser.uid));
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    this.householdId = userData.householdId;
+                    this.userProfile = userData.profile || this.userProfile;
+                    
+                    // Load household data and show app
+                    await this.loadHouseholdData();
+                    this.hideAuthScreen();
+                    this.initializeApp();
+                } else {
+                    // User exists but no household data - show household code modal
+                    this.userProfile.name = this.currentUser.displayName || this.currentUser.email.split('@')[0];
+                    this.userProfile.email = this.currentUser.email;
+                    this.userProfile.avatar = this.currentUser.photoURL;
+                    this.userProfile.color = this.generateRandomColor();
+                    
+                    this.saveData('userProfile', this.userProfile);
+                    this.showHouseholdCodeModal();
+                }
+            }
+        } catch (error) {
+            console.error('Error checking for redirect result:', error);
+        }
+    }
+
+    // Process Google sign-in result (used by both popup and redirect)
+    async processGoogleSignIn(user) {
+        try {
+            console.log('Processing Google sign-in for user:', user);
+            
+            // Check if user already exists
+            const userDoc = await this.firebase.getDoc(this.firebase.doc(this.firebase.db, 'users', user.uid));
+            
+            if (userDoc.exists()) {
+                // Existing user - load their data
+                const userData = userDoc.data();
+                this.householdId = userData.householdId;
+                this.userProfile = userData.profile || this.userProfile;
+                
+                // Save user data locally for persistence
+                this.saveData('userProfile', this.userProfile);
+                this.saveData('householdId', this.householdId);
+                
+                // Load household data
+                await this.loadHouseholdData();
+                this.showNotification('Welcome back!', 'success');
+                
+                // Hide auth screen and show app
+                this.hideAuthScreen();
+                this.initializeApp();
+            } else {
+                // New user - update profile with Google data and show household code modal
+                this.userProfile.name = user.displayName || user.email.split('@')[0];
+                this.userProfile.email = user.email;
+                this.userProfile.avatar = user.photoURL;
+                this.userProfile.color = this.generateRandomColor();
+                
+                console.log('Updated user profile with Google data:', this.userProfile);
+                
+                // Save profile locally
+                this.saveData('userProfile', this.userProfile);
+                
+                // Show household code modal
+                this.showHouseholdCodeModal();
+            }
+        } catch (error) {
+            console.error('Error processing Google sign-in:', error);
+            this.showNotification('Error processing sign-in: ' + error.message, 'error');
+        }
+    }
+
+    // Set up Firebase auth state listener
+    setupAuthStateListener() {
+        this.firebase.onAuthStateChanged(this.firebase.auth, async (user) => {
+            if (user) {
+                console.log('Auth state changed - user signed in:', user);
+                this.currentUser = user;
+                this.isOnline = true;
+                
+                // Check if we already processed this user (avoid duplicate processing)
+                if (!this.userProfile.name || this.userProfile.name === 'Alex Chen') {
+                    await this.processGoogleSignIn(user);
+                }
+            } else {
+                console.log('Auth state changed - user signed out');
+                this.currentUser = null;
+                this.isOnline = false;
+                this.showAuthScreen();
+            }
+        });
     }
 
     // Check for popup blockers and provide guidance
