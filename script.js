@@ -5011,8 +5011,7 @@ class HouseholdManager {
         // Show auth screen by default
         this.showAuthScreen();
         
-        // Check for popup blockers
-        this.checkPopupBlocker();
+        // No popup blocker check needed - using redirect only
         
         // Set up event listeners for auth options - use setTimeout to ensure DOM is ready
         setTimeout(() => {
@@ -5200,72 +5199,13 @@ class HouseholdManager {
             
             const provider = new this.firebase.GoogleAuthProvider();
             
-            // Try popup first, fallback to redirect if blocked
-            let result;
-            try {
-                result = await this.firebase.signInWithPopup(this.firebase.auth, provider);
-            } catch (popupError) {
-                console.log('Popup blocked, trying redirect method...', popupError);
-                
-                // Check if it's a popup blocker error
-                if (popupError.code === 'auth/popup-blocked' || popupError.message.includes('popup')) {
-                    this.showNotification('Popup blocked! Redirecting to Google sign-in...', 'info');
-                } else {
-                    this.showNotification('Sign-in error: ' + popupError.message, 'error');
-                    return;
-                }
-                
-                // Try redirect method as fallback
-                await this.firebase.signInWithRedirect(this.firebase.auth, provider);
-                return; // Redirect will handle the rest
-            }
+            // Use redirect method only (no popup)
+            console.log('Using redirect method for Google sign-in...');
+            this.showNotification('Redirecting to Google sign-in...', 'info');
             
-            const user = result.user;
-            
-            console.log('Google sign in successful:', user);
-            
-            // Check if user already exists
-            const userDoc = await this.firebase.getDoc(this.firebase.doc(this.firebase.db, 'users', user.uid));
-            
-            if (userDoc.exists()) {
-                // Existing user - load their data
-                const userData = userDoc.data();
-                this.householdId = userData.householdId;
-                this.userProfile = userData.profile || this.userProfile;
-                
-                // Save user data locally for persistence
-                this.saveData('userProfile', this.userProfile);
-                this.saveData('householdId', this.householdId);
-                
-                // Load household data
-                await this.loadHouseholdData();
-                
-                this.showNotification('Welcome back!', 'success');
-            } else {
-                // New user - update profile with Google data and show household code modal
-                this.userProfile.name = user.displayName || user.email.split('@')[0];
-                this.userProfile.email = user.email;
-                this.userProfile.avatar = user.photoURL;
-                this.userProfile.color = this.generateRandomColor();
-                
-                console.log('Updated user profile with Google data:', this.userProfile);
-                
-                // Save profile locally
-                this.saveData('userProfile', this.userProfile);
-                
-                // Show household code modal
-                this.showHouseholdCodeModal();
-                return;
-            }
-            
-            // Update profile display immediately
-            this.updateProfileDisplay();
-            
-            // Log analytics event
-            this.firebase.logEvent(this.firebase.analytics, 'login', {
-                method: 'google',
-                user_id: user.uid
-            });
+            // Use redirect method
+            await this.firebase.signInWithRedirect(this.firebase.auth, provider);
+            return; // Redirect will handle the rest
             
         } catch (error) {
             console.error('Google sign in error:', error);
@@ -5279,6 +5219,33 @@ class HouseholdManager {
             this.showNotification('Google sign in failed: ' + error.message, 'error');
         }
     }
+
+    async signIn(email, password) {
+        try {
+            console.log('Attempting sign in...');
+            const userCredential = await this.firebase.signInWithEmailAndPassword(this.firebase.auth, email, password);
+            console.log('Sign in successful:', userCredential.user);
+            
+            // Log analytics event
+            this.firebase.logEvent(this.firebase.analytics, 'login', {
+                method: 'email',
+                user_id: userCredential.user.uid
+            });
+            
+            this.showNotification('Signed in successfully!', 'success');
+        } catch (error) {
+            console.error('Sign in error:', error);
+            
+            // Log failed login attempt
+            this.firebase.logEvent(this.firebase.analytics, 'login_failed', {
+                method: 'email',
+                error_code: error.code
+            });
+            
+            this.showNotification('Sign in failed: ' + error.message, 'error');
+        }
+    }
+
 
     showHouseholdCodeModal() {
         const modal = document.getElementById('household-code-modal');
