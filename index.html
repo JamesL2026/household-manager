@@ -79,7 +79,7 @@
                     </div>
                     <h3>Continue as Guest</h3>
                     <p>Try the app without signing in. Data will be saved locally but won't sync across devices</p>
-                    <button id="guest-auth-btn" class="auth-btn guest-btn">
+                    <button id="guest-auth-btn" class="auth-btn guest-btn" onclick="if(window.app) app.handleGuestAuth()">
                         <i class="fas fa-user-clock"></i>
                         Continue as Guest
                     </button>

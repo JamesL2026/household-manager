@@ -330,10 +330,6 @@ class HouseholdManager {
             localStorage.removeItem('pending_sync');
         }
     }
-    loadData(key) {
-        const data = localStorage.getItem(`household_${key}`);
-        return data ? JSON.parse(data) : null;
-    }
     loadAllData() {
         // Load all data from localStorage
         this.roommates = this.loadData('roommates') || [];
@@ -4097,6 +4093,20 @@ class HouseholdManager {
             this.initializeApp();
             // Show guest notification
             this.showNotification('Welcome! You are using guest mode. Data will be saved locally but won\'t sync across devices.', 'info');
+            
+            // --- refresh main views for guest mode ---
+            try {
+                this.switchTab('calendar');
+                this.renderCalendar();
+                this.renderChoresList();
+                this.renderPersonalSchedule();
+                this.renderLaundrySchedule();
+                this.updateNotificationBadge();
+                this.updateSettings();
+            } catch (err) {
+                console.error("Error refreshing UI after guest auth:", err);
+            }
+            
             console.log('Guest authentication completed');
         }, 100);
     }
