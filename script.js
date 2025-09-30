@@ -5057,8 +5057,29 @@ class HouseholdManager {
             const guestBtn = document.getElementById('guest-auth-btn');
             const signinForm = document.getElementById('signin-form');
             const signupForm = document.getElementById('signup-form');
+            const signinTab = document.getElementById('signin-tab');
+            const signupTab = document.getElementById('signup-tab');
+            const signinContainer = document.getElementById('signin-container');
+            const signupContainer = document.getElementById('signup-container');
             
             console.log('Setting up auth form listeners:', { guestBtn, signinForm, signupForm });
+            
+            // Tab switching
+            if (signinTab && signupTab && signinContainer && signupContainer) {
+                signinTab.addEventListener('click', () => {
+                    signinTab.classList.add('active');
+                    signupTab.classList.remove('active');
+                    signinContainer.classList.add('active');
+                    signupContainer.classList.remove('active');
+                });
+                
+                signupTab.addEventListener('click', () => {
+                    signupTab.classList.add('active');
+                    signinTab.classList.remove('active');
+                    signupContainer.classList.add('active');
+                    signinContainer.classList.remove('active');
+                });
+            }
             
             if (guestBtn) {
                 guestBtn.addEventListener('click', () => {
