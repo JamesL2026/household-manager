@@ -5067,10 +5067,18 @@ class HouseholdManager {
                     const email = document.getElementById('signin-email').value;
                     const password = document.getElementById('signin-password').value;
 
+                    console.log('Sign in form submitted:', { email, password: '***' });
+
+                    if (!email || !password) {
+                        this.showNotification('Please fill in all fields', 'error');
+                        return;
+                    }
+
                     try {
                         await this.auth.signInWithEmail(email, password);
                     } catch (error) {
                         console.error('Sign in error:', error);
+                        this.showNotification('Sign in failed: ' + error.message, 'error');
                     }
                 });
             }
@@ -5082,7 +5090,17 @@ class HouseholdManager {
                     const email = document.getElementById('signup-email').value;
                     const password = document.getElementById('signup-password').value;
 
-                    console.log('Create account form submitted:', { name, email, password });
+                    console.log('Create account form submitted:', { name, email, password: '***' });
+
+                    if (!name || !email || !password) {
+                        this.showNotification('Please fill in all fields', 'error');
+                        return;
+                    }
+
+                    if (password.length < 6) {
+                        this.showNotification('Password must be at least 6 characters', 'error');
+                        return;
+                    }
 
                     try {
                         await this.auth.createAccount(email, password, name);
@@ -5096,7 +5114,13 @@ class HouseholdManager {
             if (guestBtn) {
                 guestBtn.addEventListener('click', () => {
                     console.log('Guest auth button clicked');
-                    this.auth.signInAsGuest();
+                    try {
+                        this.auth.signInAsGuest();
+                        console.log('Guest authentication successful');
+                    } catch (error) {
+                        console.error('Guest auth error:', error);
+                        this.showNotification('Guest authentication failed: ' + error.message, 'error');
+                    }
                 });
             }
 
