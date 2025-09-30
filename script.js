@@ -132,8 +132,8 @@ class HouseholdManager {
         // Initialize Firebase listeners
         this.initFirebase();
         
-        // Initialize redirect authentication (Firebase recommended)
-        this.auth = new RedirectAuth(this);
+        // Initialize bulletproof authentication (final attempt)
+        this.auth = new BulletproofAuth(this);
         this.auth.initialize();
         
         // Set up mandatory authentication
