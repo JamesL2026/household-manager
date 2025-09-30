@@ -437,23 +437,36 @@ class HouseholdManager {
             btn.addEventListener('click', (e) => this.switchView(e.target.dataset.view));
         });
         // Calendar Navigation
-        document.getElementById('prev-period').addEventListener('click', () => this.navigatePeriod(-1));
-        document.getElementById('next-period').addEventListener('click', () => this.navigatePeriod(1));
+        const prevPeriod = document.getElementById('prev-period');
+        const nextPeriod = document.getElementById('next-period');
+        if (prevPeriod) prevPeriod.addEventListener('click', () => this.navigatePeriod(-1));
+        if (nextPeriod) nextPeriod.addEventListener('click', () => this.navigatePeriod(1));
         // Laundry Navigation
-        document.getElementById('prev-week').addEventListener('click', () => this.navigateWeek(-1));
-        document.getElementById('next-week').addEventListener('click', () => this.navigateWeek(1));
+        const prevWeek = document.getElementById('prev-week');
+        const nextWeek = document.getElementById('next-week');
+        if (prevWeek) prevWeek.addEventListener('click', () => this.navigateWeek(-1));
+        if (nextWeek) nextWeek.addEventListener('click', () => this.navigateWeek(1));
         // Laundry Reservation
-        document.getElementById('reserve-laundry-btn').addEventListener('click', () => this.openLaundryBookingModal());
-        document.getElementById('clear-selection').addEventListener('click', () => this.clearSelection());
+        const reserveBtn = document.getElementById('reserve-laundry-btn');
+        const clearBtn = document.getElementById('clear-selection');
+        if (reserveBtn) reserveBtn.addEventListener('click', () => this.openLaundryBookingModal());
+        if (clearBtn) clearBtn.addEventListener('click', () => this.clearSelection());
         // Modal Controls
         this.setupModalListeners();
         // Maintenance
-        document.getElementById('add-maintenance-btn').addEventListener('click', () => this.openModal('add-maintenance-modal'));
-        document.getElementById('save-maintenance').addEventListener('click', () => this.saveMaintenanceIssue());
-        document.getElementById('cancel-maintenance').addEventListener('click', () => this.closeModal('add-maintenance-modal'));
-        document.getElementById('save-edit-maintenance').addEventListener('click', () => this.saveEditMaintenance());
-        document.getElementById('delete-maintenance').addEventListener('click', () => this.deleteMaintenanceIssue());
-        document.getElementById('cancel-edit-maintenance').addEventListener('click', () => this.closeModal('edit-maintenance-modal'));
+        const addMaintenanceBtn = document.getElementById('add-maintenance-btn');
+        const saveMaintenanceBtn = document.getElementById('save-maintenance');
+        const cancelMaintenanceBtn = document.getElementById('cancel-maintenance');
+        const saveEditMaintenanceBtn = document.getElementById('save-edit-maintenance');
+        const deleteMaintenanceBtn = document.getElementById('delete-maintenance');
+        const cancelEditMaintenanceBtn = document.getElementById('cancel-edit-maintenance');
+        
+        if (addMaintenanceBtn) addMaintenanceBtn.addEventListener('click', () => this.openModal('add-maintenance-modal'));
+        if (saveMaintenanceBtn) saveMaintenanceBtn.addEventListener('click', () => this.saveMaintenanceIssue());
+        if (cancelMaintenanceBtn) cancelMaintenanceBtn.addEventListener('click', () => this.closeModal('add-maintenance-modal'));
+        if (saveEditMaintenanceBtn) saveEditMaintenanceBtn.addEventListener('click', () => this.saveEditMaintenance());
+        if (deleteMaintenanceBtn) deleteMaintenanceBtn.addEventListener('click', () => this.deleteMaintenanceIssue());
+        if (cancelEditMaintenanceBtn) cancelEditMaintenanceBtn.addEventListener('click', () => this.closeModal('edit-maintenance-modal'));
         document.getElementById('status-filter').addEventListener('change', (e) => this.filterMaintenanceIssues(e.target.value));
         // Inventory
         document.getElementById('add-item-btn').addEventListener('click', () => this.openModal('add-item-modal'));
@@ -4079,11 +4092,13 @@ class HouseholdManager {
         this.saveData('settings', this.settings);
         // Hide auth screen and show app
         this.hideAuthScreen();
-        // Initialize the entire app for guest user
-        this.initializeApp();
-        // Show guest notification
-        this.showNotification('Welcome! You are using guest mode. Data will be saved locally but won\'t sync across devices.', 'info');
-        console.log('Guest authentication completed');
+        // Wait for DOM to be ready, then initialize the entire app for guest user
+        setTimeout(() => {
+            this.initializeApp();
+            // Show guest notification
+            this.showNotification('Welcome! You are using guest mode. Data will be saved locally but won\'t sync across devices.', 'info');
+            console.log('Guest authentication completed');
+        }, 100);
     }
     async deleteFromFirebase(path) {
         if (!this.householdId) return;
