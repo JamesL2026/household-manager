@@ -5055,10 +5055,11 @@ class HouseholdManager {
         // Set up event listeners for auth options - use setTimeout to ensure DOM is ready
         setTimeout(() => {
             const signinForm = document.getElementById('signin-form');
+            const signupForm = document.getElementById('signup-form');
             const guestBtn = document.getElementById('guest-auth-btn');
-            const createAccountBtn = document.getElementById('create-account-btn');
+            const toggleBtn = document.getElementById('toggle-auth-btn');
 
-            console.log('Setting up auth form listeners:', { signinForm, guestBtn, createAccountBtn });
+            console.log('Setting up auth form listeners:', { signinForm, signupForm, guestBtn, toggleBtn });
 
             if (signinForm) {
                 signinForm.addEventListener('submit', async (e) => {
@@ -5074,6 +5075,21 @@ class HouseholdManager {
                 });
             }
 
+            if (signupForm) {
+                signupForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const name = document.getElementById('signup-name').value;
+                    const email = document.getElementById('signup-email').value;
+                    const password = document.getElementById('signup-password').value;
+
+                    try {
+                        await this.auth.createAccount(email, password, name);
+                    } catch (error) {
+                        console.error('Sign up error:', error);
+                    }
+                });
+            }
+
             if (guestBtn) {
                 guestBtn.addEventListener('click', () => {
                     console.log('Guest auth button clicked');
@@ -5081,10 +5097,9 @@ class HouseholdManager {
                 });
             }
 
-            if (createAccountBtn) {
-                createAccountBtn.addEventListener('click', () => {
-                    console.log('Create account button clicked');
-                    this.showCreateAccountModal();
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', () => {
+                    this.toggleAuthForm();
                 });
             }
         }, 100);
@@ -5115,21 +5130,26 @@ class HouseholdManager {
         }
     }
 
-    // Show create account modal
-    showCreateAccountModal() {
-        const name = prompt('Enter your full name:');
-        if (!name) return;
+    // Toggle between sign in and create account forms
+    toggleAuthForm() {
+        const signinForm = document.getElementById('signin-form');
+        const signupForm = document.getElementById('signup-form');
+        const authTitle = document.getElementById('auth-title');
+        const toggleBtn = document.getElementById('toggle-auth-btn');
         
-        const email = prompt('Enter your email address:');
-        if (!email) return;
-        
-        const password = prompt('Enter a password (min 6 characters):');
-        if (!password || password.length < 6) {
-            this.showNotification('Password must be at least 6 characters', 'error');
-            return;
+        if (signinForm.style.display === 'none') {
+            // Show sign in form
+            signinForm.style.display = 'flex';
+            signupForm.style.display = 'none';
+            authTitle.textContent = 'Sign In';
+            toggleBtn.textContent = "Don't have an account? Create one";
+        } else {
+            // Show create account form
+            signinForm.style.display = 'none';
+            signupForm.style.display = 'flex';
+            authTitle.textContent = 'Create Account';
+            toggleBtn.textContent = 'Already have an account? Sign in';
         }
-        
-        this.auth.createAccount(email, password, name);
     }
 
     // Hide authentication screen and show app

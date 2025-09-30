@@ -3637,14 +3637,6 @@ input[readonly] {
     line-height: 1.5;
 }
 
-.info-text {
-    margin: 0 0 20px 0;
-    color: #666;
-    font-size: 13px;
-    line-height: 1.4;
-    font-style: italic;
-}
-
 .auth-form {
     display: flex;
     flex-direction: column;
@@ -3704,44 +3696,34 @@ input[readonly] {
 }
 
 .guest-btn {
-    background: #000;
+    background: #333;
     color: white;
-    border: 2px solid #000;
+    border: 2px solid #333;
 }
 
 .guest-btn:hover {
-    background: #333;
-    border-color: #333;
+    background: #000;
+    border-color: #000;
     color: white;
 }
 
-.create-account-section {
-    margin-top: 40px;
+.auth-toggle {
+    margin-top: 20px;
     text-align: center;
-    padding-top: 20px;
-    border-top: 1px solid #e9ecef;
 }
 
-.create-btn {
-    background: #28a745;
-    color: white;
+.toggle-btn {
+    background: none;
     border: none;
-    padding: 15px 30px;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 600;
+    color: #1a73e8;
+    font-size: 14px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
+    text-decoration: underline;
+    transition: color 0.3s ease;
 }
 
-.create-btn:hover {
-    background: #218838;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+.toggle-btn:hover {
+    color: #1557b0;
 }
 
 /* Responsive Design */
