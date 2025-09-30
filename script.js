@@ -4726,10 +4726,10 @@ class HouseholdManager {
 
         try {
             // Initialize Realtime Database manager
-            this.initRealtimeDatabase();
+            this.initFirestore();
             
-            // Set up real-time listeners using Realtime Database
-            this.realtimeDB.setupRealtimeListeners(this.householdId, this);
+            // Set up real-time listeners using Firestore
+            this.firestoreManager.setupFirestoreListeners(this.householdId, this);
 
             console.log('All real-time listeners set up successfully');
 
@@ -4742,27 +4742,39 @@ class HouseholdManager {
         if (!this.householdId || !this.firebase) return;
 
         try {
-            const fullPath = `households/${this.householdId}/${path}`;
-            const dataRef = this.firebase.ref(this.firebase.database, fullPath);
-            
-            // Add timestamp and user info
-            const dataWithMeta = {
-                ...data,
-                updatedAt: new Date().toISOString(),
-                updatedBy: this.currentUser.uid
-            };
-            
-            await this.firebase.set(dataRef, dataWithMeta);
-            console.log('Successfully saved to Realtime Database:', fullPath);
+            // For arrays, save each item as a document
+            if (Array.isArray(data)) {
+                for (const item of data) {
+                    if (item.id) {
+                        const docRef = this.firebase.doc(this.firebase.db, 'households', this.householdId, path, item.id);
+                        const dataWithMeta = {
+                            ...item,
+                            updatedAt: new Date(),
+                            updatedBy: this.currentUser.uid
+                        };
+                        await this.firebase.setDoc(docRef, dataWithMeta);
+                    }
+                }
+            } else {
+                // For single documents
+                const docRef = this.firebase.doc(this.firebase.db, 'households', this.householdId, path, 'data');
+                const dataWithMeta = {
+                    ...data,
+                    updatedAt: new Date(),
+                    updatedBy: this.currentUser.uid
+                };
+                await this.firebase.setDoc(docRef, dataWithMeta);
+            }
+            console.log('Successfully saved to Firestore:', path);
         } catch (error) {
-            console.error('Error saving to Firebase Realtime Database:', error);
+            console.error('Error saving to Firestore:', error);
         }
     }
 
     // Initialize Realtime Database manager
-    initRealtimeDatabase() {
-        if (!this.realtimeDB) {
-            this.realtimeDB = new RealtimeDatabaseManager(this.firebase);
+    initFirestore() {
+        if (!this.firestoreManager) {
+            this.firestoreManager = new FirestoreManager(this.firebase);
         }
     }
 
