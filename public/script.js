@@ -140,7 +140,7 @@ class HouseholdManager {
             name: 'Alex Chen',
             email: 'alex.chen@usc.edu',
             avatar: null,
-            color: this.generateRandomColor()
+            color: '#1E90FF'
         };
         this.currentView = 'weekly';
         this.currentDate = new Date();
@@ -737,24 +737,10 @@ class HouseholdManager {
             }
         });
     }
-    generateRandomColor() {
-        const colors = [
-            '#FF6B6B', '#FF8C00', '#FFD700', '#32CD32', '#00CED1',
-            '#1E90FF', '#8A2BE2', '#FF1493', '#FF4500', '#00FF7F'
-        ];
-        // Get used colors
-        const usedColors = this.roommates.map(r => r.color).filter(c => c);
-        // Find available colors
-        const availableColors = colors.filter(c => !usedColors.includes(c));
-        // Return random available color or fallback to random color
-        return availableColors.length > 0 ? 
-            availableColors[Math.floor(Math.random() * availableColors.length)] :
-            colors[Math.floor(Math.random() * colors.length)];
-    }
     saveRoommate() {
         const name = document.getElementById('roommate-name').value;
         const email = document.getElementById('roommate-email').value;
-        const color = document.getElementById('roommate-color').value || this.generateRandomColor();
+        const color = document.getElementById('roommate-color').value || '#1E90FF';
         if (!name) {
             this.showNotification('Please enter a name', 'error');
             return;
@@ -4086,7 +4072,7 @@ class HouseholdManager {
             name: 'Guest User',
             email: 'guest@example.com',
             avatar: null,
-            color: this.generateRandomColor()
+            color: '#1E90FF'
         };
         // Save guest profile and settings
         this.saveData('userProfile', this.userProfile);
@@ -4353,7 +4339,7 @@ class HouseholdManager {
             await this.firebase.addDoc(this.firebase.collection(this.firebase.db, 'households', householdId, 'roommates'), {
                 name: name,
                 email: email,
-                color: this.generateRandomColor(),
+                color: '#1E90FF',
                 userId: user.uid,
                 createdAt: new Date().toISOString()
             });
