@@ -1755,7 +1755,7 @@ body {
 .roommate-email {
     color: #666;
     font-size: 0.9rem;
-    margin-bottom: 15px;
+    margin-bottom: 0;
 }
 
 .roommate-actions {
@@ -1792,7 +1792,7 @@ body {
 
 .setting-group h3 {
     color: #2c3e50;
-    margin-bottom: 15px;
+    margin-bottom: 0;
     font-size: 1.3rem;
 }
 
@@ -3571,9 +3571,10 @@ input[readonly] {
 }
 
 .auth-header h1 {
-    color: #333;
+    color: #000;
     margin-bottom: 30px;
     font-size: 2.5em;
+    font-weight: 700;
 }
 
 .auth-options {
@@ -3593,6 +3594,10 @@ input[readonly] {
     cursor: pointer;
     flex: 1;
     min-width: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
 }
 
 .auth-option-card:hover {
@@ -3613,7 +3618,7 @@ input[readonly] {
 
 .auth-icon {
     font-size: 3em;
-    margin-bottom: 15px;
+    margin-bottom: 0;
 }
 
 .auth-option-card.login-option .auth-icon {
@@ -3625,7 +3630,7 @@ input[readonly] {
 }
 
 .auth-option-card h3 {
-    margin: 0 0 10px 0;
+    margin: 15px 0 10px 0;
     color: #333;
     font-size: 1.3em;
 }
@@ -3687,12 +3692,28 @@ input[readonly] {
 .login-btn {
     background: linear-gradient(135deg, #1a73e8, #4285f4);
     color: white;
+    border: 1px solid #dadce0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .login-btn:hover {
     background: linear-gradient(135deg, #1557b0, #3367d6);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
+}
+
+/* Create Account Button - Google Style */
+.create-account-btn {
+    background: #34a853;
+    color: white;
+    border: 1px solid #dadce0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.create-account-btn:hover {
+    background: #2d8f47;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(52, 168, 83, 0.3);
 }
 
 .guest-btn {
@@ -3790,7 +3811,7 @@ input[readonly] {
 
 .auth-header h1 {
     color: #333;
-    margin: 0 0 10px 0;
+    margin: 15px 0 10px 0;
     font-size: 2.5em;
 }
 
@@ -3817,6 +3838,10 @@ input[readonly] {
     cursor: pointer;
     flex: 1;
     min-width: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
 }
 
 .auth-option-card:hover {
@@ -3837,7 +3862,7 @@ input[readonly] {
 
 .auth-icon {
     font-size: 3em;
-    margin-bottom: 15px;
+    margin-bottom: 0;
 }
 
 .auth-option-card.google-option .auth-icon {
@@ -3849,7 +3874,7 @@ input[readonly] {
 }
 
 .auth-option-card h3 {
-    margin: 0 0 10px 0;
+    margin: 15px 0 10px 0;
     color: #333;
     font-size: 1.3em;
 }
@@ -3951,7 +3976,7 @@ input[readonly] {
 }
 
 .welcome-section h4 {
-    margin: 0 0 10px 0;
+    margin: 15px 0 10px 0;
     color: #333;
 }
 
@@ -4041,7 +4066,7 @@ input[readonly] {
 }
 
 .login-form .form-group {
-    margin-bottom: 15px;
+    margin-bottom: 0;
 }
 
 .login-form label {
@@ -4150,7 +4175,7 @@ input[readonly] {
 }
 
 .option-card h4 {
-    margin: 0 0 10px 0;
+    margin: 15px 0 10px 0;
     color: #333;
     font-size: 18px;
 }
@@ -4351,7 +4376,7 @@ input[readonly] {
 
 .email-option h3 {
     color: #333;
-    margin: 0 0 10px 0;
+    margin: 15px 0 10px 0;
     font-size: 24px;
     font-weight: 700;
     text-align: center;
