@@ -135,7 +135,9 @@ class HouseholdManager {
         
         // Initialize maintenance contact settings
         this.updateMaintenanceButton();
-        this.roommates = this.loadData('roommates') || [];
+        
+        // Clear existing roommates and start fresh
+        this.clearAllRoommates();
         this.chores = this.loadData('chores') || [];
         this.personalTasks = this.loadData('personalTasks') || [];
         this.laundryBookings = this.loadData('laundryBookings') || [];
@@ -166,8 +168,8 @@ class HouseholdManager {
         
         // User profile data (independent of roommates)
         this.userProfile = this.loadData('userProfile') || {
-            name: 'Alex Chen',
-            email: 'alex.chen@usc.edu',
+            name: 'You',
+            email: '',
             avatar: null,
             color: this.generateRandomColor()
         };
@@ -2418,8 +2420,10 @@ class HouseholdManager {
 
     // Sample Data Initialization
     initializeSampleData() {
+        // Start with empty roommates for fresh slate
         if (this.roommates.length === 0) {
-            this.initializeUSCRoommates();
+            this.roommates = [];
+            this.saveData('roommates', this.roommates);
         }
         if (this.inventoryItems.length === 0) {
             this.initializeSampleInventory();
@@ -2439,19 +2443,17 @@ class HouseholdManager {
     }
 
     initializeUSCRoommates() {
-        const uscRoommates = [
-            { id: 'user1', name: 'Alex Chen', email: 'alex.chen@usc.edu', avatar: '👨‍💻', color: '#FF6B6B', preferences: { chores: ['dishes', 'trash'], availability: 'weekends' } },
-            { id: 'user2', name: 'Sarah Johnson', email: 'sarah.j@usc.edu', avatar: '👩‍🎓', color: '#1E90FF', preferences: { chores: ['cleaning', 'laundry'], availability: 'weekdays' } },
-            { id: 'user3', name: 'Mike Rodriguez', email: 'mike.r@usc.edu', avatar: '👨‍🍳', color: '#32CD32', preferences: { chores: ['cooking', 'groceries'], availability: 'evenings' } },
-            { id: 'user4', name: 'Emma Davis', email: 'emma.d@usc.edu', avatar: '👩‍🔬', color: '#FF8C00', preferences: { chores: ['bathroom', 'organizing'], availability: 'mornings' } },
-            { id: 'user5', name: 'David Kim', email: 'david.k@usc.edu', avatar: '👨‍💼', color: '#FFD700', preferences: { chores: ['bills', 'maintenance'], availability: 'weekends' } },
-            { id: 'user6', name: 'Lisa Wang', email: 'lisa.w@usc.edu', avatar: '👩‍🎨', color: '#8A2BE2', preferences: { chores: ['decorating', 'plants'], availability: 'flexible' } },
-            { id: 'user7', name: 'James Wilson', email: 'james.w@usc.edu', avatar: '👨‍🏫', color: '#00CED1', preferences: { chores: ['trash', 'recycling'], availability: 'evenings' } },
-            { id: 'user8', name: 'Maya Patel', email: 'maya.p@usc.edu', avatar: '👩‍⚕️', color: '#FF1493', preferences: { chores: ['cleaning', 'dishes'], availability: 'mornings' } }
-        ];
-        
-        this.roommates = uscRoommates;
+        // Start with empty roommates array for fresh slate
+        this.roommates = [];
         this.saveData('roommates', this.roommates);
+    }
+
+    // Clear all roommate data and start fresh
+    clearAllRoommates() {
+        this.roommates = [];
+        this.saveData('roommates', this.roommates);
+        this.renderRoommates();
+        console.log('All roommates cleared - starting fresh!');
     }
 
     initializeSampleInventory() {
