@@ -4764,11 +4764,11 @@ class HouseholdManager {
             } else {
                 // For single documents
                 const docRef = this.firebase.doc(this.firebase.db, 'households', this.householdId, path, 'data');
-                const dataWithMeta = {
-                    ...data,
+            const dataWithMeta = {
+                ...data,
                     updatedAt: new Date(),
-                    updatedBy: this.currentUser.uid
-                };
+                updatedBy: this.currentUser.uid
+            };
                 await this.firebase.setDoc(docRef, dataWithMeta);
             }
             console.log('Successfully saved to Firestore:', path);
@@ -5057,27 +5057,8 @@ class HouseholdManager {
             const guestBtn = document.getElementById('guest-auth-btn');
             const signinForm = document.getElementById('signin-form');
             const signupForm = document.getElementById('signup-form');
-            const showSignup = document.getElementById('show-signup');
-            const showSignin = document.getElementById('show-signin');
-            const signinSection = document.getElementById('signin-section');
-            const signupSection = document.getElementById('signup-section');
             
             console.log('Setting up auth form listeners:', { guestBtn, signinForm, signupForm });
-            
-            // Section switching
-            if (showSignup && showSignin && signinSection && signupSection) {
-                showSignup.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    signinSection.classList.remove('active');
-                    signupSection.classList.add('active');
-                });
-                
-                showSignin.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    signupSection.classList.remove('active');
-                    signinSection.classList.add('active');
-                });
-            }
             
             if (guestBtn) {
                 guestBtn.addEventListener('click', () => {
@@ -5208,7 +5189,7 @@ class HouseholdManager {
         
         // Show guest notification only once
         if (!this.guestNotificationShown) {
-            this.showNotification('Welcome! You are using guest mode. Data will be saved locally but won\'t sync across devices.', 'info');
+        this.showNotification('Welcome! You are using guest mode. Data will be saved locally but won\'t sync across devices.', 'info');
             this.guestNotificationShown = true;
         }
         
@@ -5275,7 +5256,7 @@ class HouseholdManager {
     async signInWithGoogle() {
         if (this.auth) {
             await this.auth.signInWithGoogle();
-        } else {
+            } else {
             this.showNotification('Authentication not initialized', 'error');
         }
     }
@@ -5678,7 +5659,7 @@ class HouseholdManager {
 // Initialize the application when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     if (!window.app) {
-        window.app = new HouseholdManager();
+    window.app = new HouseholdManager();
     }
     
     // Initialize default roommates if none exist
@@ -5796,7 +5777,7 @@ function setupLoginModal() {
             createHouseholdBtn.addEventListener('click', () => {
                 console.log('Create household clicked');
                 if (window.app && typeof window.app.createHousehold === 'function') {
-                    window.app.createHousehold();
+                window.app.createHousehold();
                 } else {
                     console.error('createHousehold function not found on app object');
                     console.log('Available methods:', Object.getOwnPropertyNames(window.app));
@@ -5815,14 +5796,14 @@ function setupLoginModal() {
                 
                 if (householdCode && householdCode.trim() !== '') {
                     if (window.app && typeof window.app.joinHousehold === 'function') {
-                        window.app.joinHousehold(householdCode.trim());
-                    } else {
+                    window.app.joinHousehold(householdCode.trim());
+                } else {
                         console.error('joinHousehold function not found on app object');
                         console.log('Available methods:', Object.getOwnPropertyNames(window.app));
                     }
                 } else {
                     if (window.app && typeof window.app.showNotification === 'function') {
-                        window.app.showNotification('Please enter a household code', 'error');
+                    window.app.showNotification('Please enter a household code', 'error');
                     } else {
                         alert('Please enter a household code');
                     }

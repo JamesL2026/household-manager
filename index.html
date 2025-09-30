@@ -53,23 +53,21 @@
     <div id="auth-screen" class="auth-screen">
         <div class="auth-container">
             <div class="auth-header">
-                <div class="title-box">
-                    <h1>🏠 Household Manager</h1>
-                    <p>Manage your household tasks, chores, and more</p>
-                </div>
+                <h1>🏠 Household Manager</h1>
+                <p>Please choose how you'd like to access your household</p>
             </div>
             
-            <div class="auth-layout">
-                <!-- Main Auth Section -->
-                <div class="main-auth-section">
-                    <div class="auth-sections">
-                        <!-- Sign In Section -->
-                        <div class="auth-section active" id="signin-section">
-                            <div class="section-header">
-                                <h2>Sign In</h2>
-                                <p>Welcome back! Sign in to your account</p>
-                            </div>
-                            
+            <div class="auth-options">
+                <div class="auth-option-card email-option">
+                    <div class="auth-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <h3>Sign in with Email</h3>
+                    <p>Access your household with your email and password for full features and data persistence</p>
+                    
+                    <div class="auth-forms">
+                        <div class="auth-form-section">
+                            <h4>Sign In</h4>
                             <form id="signin-form" class="auth-form">
                                 <div class="form-group">
                                     <input type="email" id="signin-email" placeholder="Email address" required>
@@ -77,23 +75,19 @@
                                 <div class="form-group">
                                     <input type="password" id="signin-password" placeholder="Password" required>
                                 </div>
-                                <button type="submit" class="auth-btn primary-btn">
+                                <button type="submit" class="auth-btn email-btn">
+                                    <i class="fas fa-sign-in-alt"></i>
                                     Sign In
                                 </button>
                             </form>
-                            
-                            <div class="section-footer">
-                                <p>Don't have an account? <a href="#" id="show-signup">Create one</a></p>
-                            </div>
                         </div>
                         
-                        <!-- Sign Up Section -->
-                        <div class="auth-section" id="signup-section">
-                            <div class="section-header">
-                                <h2>Create Account</h2>
-                                <p>Get started with Household Manager</p>
-                            </div>
-                            
+                        <div class="auth-divider">
+                            <span>or</span>
+                        </div>
+                        
+                        <div class="auth-form-section">
+                            <h4>Create Account</h4>
                             <form id="signup-form" class="auth-form">
                                 <div class="form-group">
                                     <input type="text" id="signup-name" placeholder="Full name" required>
@@ -104,36 +98,34 @@
                                 <div class="form-group">
                                     <input type="password" id="signup-password" placeholder="Password (min 6 characters)" required minlength="6">
                                 </div>
-                                <button type="submit" class="auth-btn primary-btn">
+                                <button type="submit" class="auth-btn email-btn">
+                                    <i class="fas fa-user-plus"></i>
                                     Create Account
                                 </button>
                             </form>
-                            
-                            <div class="section-footer">
-                                <p>Already have an account? <a href="#" id="show-signin">Sign in</a></p>
-                            </div>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Guest Section -->
-                <div class="guest-auth-section">
-                    <div class="guest-card">
-                        <div class="guest-header">
-                            <h3>Try as Guest</h3>
-                            <p>No account needed</p>
-                        </div>
-                        
-                        <button id="guest-auth-btn" class="auth-btn guest-btn">
-                            <i class="fas fa-user-clock"></i>
-                            Continue as Guest
-                        </button>
-                        
-                        <div class="guest-info">
-                            <p>Data will be saved locally on this device</p>
-                        </div>
-                    </div>
+
+                <div class="auth-divider">
+                    <span>or</span>
                 </div>
+
+                <div class="auth-option-card guest-option">
+                    <div class="auth-icon">
+                        <i class="fas fa-user-clock"></i>
+                    </div>
+                    <h3>Continue as Guest</h3>
+                    <p>Try the app without signing in. Data will be saved locally but won't sync across devices</p>
+                    <button id="guest-auth-btn" class="auth-btn guest-btn">
+                        <i class="fas fa-user-clock"></i>
+                        Continue as Guest
+                    </button>
+                </div>
+            </div>
+            
+            <div class="auth-footer">
+                <p><small>By continuing, you agree to our terms of service</small></p>
             </div>
         </div>
     </div>
